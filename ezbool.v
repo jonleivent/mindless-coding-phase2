@@ -73,11 +73,6 @@ Proof.
   destruct b; cbn; omega.
 Qed.
 
-Ltac destruct_goal_bool :=
-  match goal with
-  | B : bool |- context[?G] => constr_eq B G; destruct B
-  end.
-
 (* How should we classify rewrite rules?  By their applicability -
 meaning by the type of formula in which they would have a chance of
 rewriting something. *)
