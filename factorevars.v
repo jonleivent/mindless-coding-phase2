@@ -27,7 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 of local defs - so that every evar in the goal exists only as such a
 standalone body.
 
-Do this first for evars that are not under binders.
+This currently only works for evars that are not under binders.
 *)
 
 Require Import hypiter.

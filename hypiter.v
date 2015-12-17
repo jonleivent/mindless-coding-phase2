@@ -1,17 +1,39 @@
+(***********************************************************************
 
-(*Iteration and multiple-choice backtracking
+Copyright (c) 2015 Jonathan Leivent
 
-In order to simplify iteration over hypotheses in a goal, we first
-"harvest" together the hyps into a single term that can be easily
-pulled apart one hyp at a time.  There is a very simple way to do this
-using the fact that the constructor tactic can can construct a
-function of any number of arguments of any type that returns some
-easily constructed type, such as True.  We then use the tactic-in-term
-construct $(...)$ to create the desired goal type by reverting or
-generalizing the hyptheses we want to be part of it.  The resulting
-constr will be a function application, where the hyps are the args -
-and so can be popped off at the right.
-*)
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+ ***********************************************************************)
+
+(*Iteration over Hypotheses
+
+In order to simplify iteration over hypotheses in a goal, we first "harvest"
+together the hyps into a single term that can be easily pulled apart one hyp
+at a time.  There is a very simple way to do this using the fact that the
+constructor tactic can can construct a function of any number of arguments of
+any type that returns some easily constructed type, such as True.  We then use
+the tactic-in-term construct ltac:(...) to create the desired goal type by
+reverting or generalizing the hyptheses we want to be part of it.  The
+resulting constr will be a function application, where the hyps are the args -
+and so can be popped off at the right.  *)
 
 Ltac harvest_hyps harvester :=
   constr:(ltac:(harvester; constructor) : True).
