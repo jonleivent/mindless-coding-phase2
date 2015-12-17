@@ -1,0 +1,8 @@
+*.v.d
+*.vo
+*.vio
+*.glob
+*~
+*.aux
+TAGS
+*.cache

@@ -1,0 +1,5 @@
+#!/bin/sh
+
+make clean
+make
+time coqtop -m -time -batch -R . mindless -impredicative-set -l wavl.v
