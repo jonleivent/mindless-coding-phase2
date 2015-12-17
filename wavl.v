@@ -68,7 +68,7 @@ rank k and the parent is at rank k+1, then there is no "gap" between them -
 they are a close as possible in rank.  Otherwise, the child is at rank k and
 the parent is at rank k+2, and there is a gap.  These wavltrees only allow one
 bit gaps for that one extra rank separation.  If we want to allow wider gaps,
-we would need more bits to encode the wiuder gaps width.
+we would need more bits to encode the wider gaps width.
 
 Why do we expose so much of the internals of a wavltree through its type
 parameters and indexes?  This turns out to make it very convenient to test
@@ -157,7 +157,7 @@ Esorted goals and ENotIn goals on ELs. *)
     to allow for leaves at both rank 0 and 1.  But, we wish to have just one
     bit of balance info per node, not two (as with classic AVL trees) - hence
     we store the gap bit on each child (that isn't Missing).  Also, this
-    frugality with balance bits is quite fortuituous, as this leaf condition
+    frugality with balance bits is quite fortuitous, as this leaf condition
     turns out to be necessary for the wavltree proofs to go through without
     forcing AVL-like multiple rotations during delete.  Instead, we get the
     better-behaved red-black-tree-like O(1) rotations per delete - in fact, we
@@ -285,7 +285,7 @@ Definition isMissing`(t : wavltree ek g lg rg f)
 (*Sometimes, we would like to determine if a wavltree is missing or not
 without having to invert it (corresponding to a match on it in the extracted
 code).  This function does this, and also adds relevant info into the proof
-context, which is probably not necessary because th bang_setup_tactic would
+context, which is probably not necessary because the bang_setup_tactic would
 find this info itself.  But, we do it anyway. *)
 Proof.
   destruct t;constructor;bang.
@@ -316,10 +316,10 @@ Proof.
     equalities like #A=#B into A=B.*)
     solve_sorted.
     (* The solve_sorted tactic is a "decision" procedure for sorted lists and
-    their sorted sublists.  On rare occassion, solve_sorted shows itself to
-    not be a decision procedure, but it has lately held up quite well.
-    Ideally, tactics like solve_sorted and boom would be made iron-clad, as
-    they are generally useful beyond just this one project. *)
+    their sorted sublists.  On rare occasion, solve_sorted shows itself to not
+    be a decision procedure, but it has lately held up quite well.  Ideally,
+    tactics like solve_sorted and boom would be made iron-clad, as they are
+    generally useful beyond just this one project. *)
   - assumption.
 Qed.
 
@@ -390,7 +390,7 @@ Proof.
     (*Since we're deliberately trying NOT to use automatically generated
     hypothesis names, these inline match tacticals allow us to generate
     bindings based on patterns, and use them instead of hypothesis names.
-    We'll also occassionally use argument names as well, although even that
+    We'll also occasionally use argument names as well, although even that
     isn't necessary, as shown here.  Note how the content indexes provide a
     very nice way to specify patterns that are visually obvious.  Also, these
     matches will be somewhat more informative than if we had used hypothesis
@@ -424,14 +424,14 @@ Defined-ended functions.
 
 By the way - the sheer size and complexity of the proof terms for these
 functions, which is partially due to the use of very-dependent types and
-partially just because the're complex functions (not so much find, but wait
+partially just because they're complex functions (not so much find, but wait
 until insert and delete), also indicates that we're much better off defining
 them using proof mode than if we tried to define them by providing a direct
 Gallina term ("Definition :=" style).  Why do we get a big savings of effort
 in proof mode?  Because of the tactics.  Some of them do a huge amount of
 heavy lifting for filling in that proof term.  Even the built-in ones, like
-inversion, provide lots of scalfholding in the proof term for dependent types
-- that you could write yourself, but wouldn't want to.  The decision procedure
+inversion, provide lots of scaffolding in the proof term for dependent types -
+that you could write yourself, but wouldn't want to.  The decision procedure
 tactics encapsulate large amounts of mathematical reasoning ability.  The
 proof search tactics scan through large spaces of possible programs/proofs to
 find solutions.*)
@@ -545,7 +545,7 @@ backtracking).  The reassoc tactic is necessary when constructing a wavltree,
 because the associativity of the contents forces a particular root.  Here,
 since we're not constructing anything new, we don't care.  So, instead of
 reassoc, we just do a replace, and solve the induced equality on contents by
-un-assocaiting (flattening) both sides.  Then, we use the "force exact" tactic
+un-associating (flattening) both sides.  Then, we use the "force exact" tactic
 (utils.v) - which is used like exact, but creates equality subgoals for not
 identical type parameters - and solve all resulting equalities with boom.*)
   (idtac + eapply setgap); (*try without setgap, then with if needed*)
@@ -558,21 +558,22 @@ identical type parameters - and solve all resulting equalities with boom.*)
 
 Ltac solve_wavl :=
 (*This mutually recursive tactic, solve_wavl, can be used to solve any
-wavltree that is solvable without conditions (meaning, without inverting
-existing wavltrees, or destructing gaps).  Note - if we didn't have the
-contents as an index on the wavltree type family, the mutual recursion between
-solve_wavl and wavl_construction might get into an endless loop.  The contents
-index stops it because it induces "eapply Node" to destruct the contents by
-pattern/unification, instead of semantically.  In other words, an arbitrary F
-: EL can be decomposed semantically forever, because we have no idea how much
-it contains; but LF ++ ^x ++ RF can only be decomposed by pattern/unification
-once - we then get two child wavltrees with LF and RF as contents, and eapply
-Node will fail vs. those - even though they may have contents.  We'll thus
-require inversion of wavltrees to go from a single variable contents field to
-something that eapply Node works on.  In theory, indexes aren't even necessary
-in Coq (except for one in eq) - we could just use type parameters and
-equalities - but indexes, including those that have some "green slime"
-(functions, such as Eapp) , can make things easier if used judiciously.*)
+wavltree that is solvable without additional case analysis (meaning, without
+inverting existing wavltrees, or destructing gaps).  Note - if we didn't have
+the contents as an index on the wavltree type family, the mutual recursion
+between solve_wavl and wavl_construction might get into an endless loop.  The
+contents index stops it because it induces "eapply Node" to destruct the
+contents by pattern unification, instead of semantically.  In other words, an
+arbitrary F : EL can be decomposed semantically forever, because we have no
+idea how much it contains; but LF ++ ^x ++ RF can only be decomposed by
+pattern unification once - we then get two child wavltrees with LF and RF as
+contents, and eapply Node will fail vs. those - even though they may have
+contents.  We'll thus require inversion of wavltrees to go from a single
+variable contents field to something that eapply Node works on.  In theory,
+indexes aren't even necessary in Coq (except for one in eq) - we could just
+use type parameters and equalities - but indexes, including those that have
+some "green slime" (functions, such as Eapp) , can make things easier if used
+judiciously.*)
   dintros;
   (wavl_missing + wavl_assumption + wavl_construction)
 with wavl_construction :=
@@ -583,9 +584,9 @@ with wavl_construction :=
   Hence, we don't get visible subgoals for ug or d, even though those weren't
   declared implicit - one for ug is created, but shelved, as ug is solved when
   equg is solved - d is solved by the unification on the contents index, and
-  so no subgoal is created for it.  We could use refine instead of eapply to
-  bypass this automatic shelving and get something perhaps a bit more
-  predictable - but we would end up trying to not solve those extra goals
+  so no subgoal is created for it.  We could use simple refine instead of
+  eapply to bypass this automatic shelving and get something perhaps a bit
+  more predictable - but we would end up trying to not solve those extra goals
   directly anyway in this case. *)
   [boom (*equg*)
   |boom (*eqlk*)
@@ -598,13 +599,13 @@ with wavl_construction :=
 
 (*The next two functions, rot1 and rot2, are rotations for insert - they are
 abstracted out just for illustration purposes.  Their signatures were found by
-first trying to solve insert alone - and looking for subgoals where the
-existing wavltrees were obviously too disimilar in rank (off by >1, such that
+first trying to solve insert directly - and looking for subgoals where the
+existing wavltrees were obviously too dissimilar in rank (off by >1, such that
 gap adjustments can't be used to make them into suitable siblings) to allow
 for direct solution by solve_wavl.  We have other tactics that are not shown
 here (rsimp, primarily) - they simplify goals but do not alter or solve them
 in any way - and these were used to make it easier to spot when the ranks
-became too disimilar.*)
+became too dissimilar.*)
 
 Definition rot1
            `(lt : wavltree k #false llg lrg lf)
@@ -663,8 +664,8 @@ better guesses about which wavltrees to try to invert first (the ones with
 higher rank) and so on to speed things up.  Certainly, future versions of Coq
 might have parallel proof search capability - that would help as well.  But,
 it isn't too hard for a human to figure out what case analysis should be tried
-at each point.  And, there are many judgement calls - for example: is it
-better ro invert a wavltree or call isMissing on it? *)
+at each point.  And, there are many judgment calls - for example: is it better
+to invert a wavltree or call isMissing on it? *)
 
 Ltac use_rot :=
 (*a tactic for using those rotation functions - note that we don't use
@@ -756,12 +757,12 @@ Definition insert(x : A)`(t : wavltree k g lg rg f) : insertResult x k g lg rg f
 Proof.
   onhead wavltree induct.
   - change ([]:EL) with ([]++[]:EL).
-    (*OK - so there is a downside to depedending on unification for the
-    contents index - it can't tell that semantically identical contents are
-    the same.  In this case, it wants an _ ++ _ form to unify with, and []
-    doesn't suffice - so we have to change it to the semantically identical
-    []++[] to make it work.  We could have built this into solve_insert - but
-    it's only needed at this one spot. *)
+    (*OK - so there is a downside to depending on unification for the contents
+    index - it can't tell that semantically identical contents are the same.
+    In this case, it wants an _ ++ _ form to unify with, and [] doesn't
+    suffice - so we have to change it to the semantically identical []++[] to
+    make it work.  We could have built this into solve_insert - but it's only
+    needed at this one spot. *)
     solve_insert.
   - match goal with
       |- insertResult ?X _ _ _ _ (_ ++ ^ ?Y ++ _) =>
@@ -817,6 +818,12 @@ Proof.
               ** solve_insert.
 Qed.
 
+(*In the extracted code for insert, note that every call to a rotation is
+paired with ISameK, and every recursive call that returns ISameK also produces
+an ISameK result.  This implies that at most one rotation is needed for
+insertion into a weak-AVL tree.  We'll see later that this is also true for
+deletion.*)
+
 Optimize Heap.
 
 (**********************************************************************)
@@ -836,7 +843,7 @@ tryLowering becomes a fairly obvious function to attempt - as it will either
 make a rotation unnecessary, or reveal just the info about the child gaps
 needed to get the rotations to work.
 
-Again, we prefer a function-specific denendent return type to express the
+Again, we prefer a function-specific dependent return type to express the
 result: *)
 
 Inductive tryLoweringResult`(t : wavltree k g lg rg f) : Set :=
@@ -870,7 +877,7 @@ Proof.
     + solve_tl.
 Qed.
 
-(* For the remaining delete functions, the depedent return types share common
+(* For the remaining delete functions, the dependent return types share common
 elements.  We will separate the return types into three levels, two of which
 will be repeatedly used.  The first level is deletedHow - which, like
 insertedHow, carries the relationships between input and output gaps and
@@ -878,8 +885,8 @@ ranks.  It turns out that in this respect, delete is a bit easier than insert
 - there are just two choices of relationship, and they are quite easily
 anticipated: DSameK is if the delete does not reduce the rank of the
 deleted-from tree, and DLowerK is when it does (by 1).  In both cases, we get
-to choose the gap of the returne deleted-from tree - so we prefer the gap that
-most likely would leave things as they were - same as the input gap for
+to choose the gap of the returned deleted-from tree - so we prefer the gap
+that most likely would leave things as they were - same as the input gap for
 DSameK, and true for DLowerK (so that if the input gap was false, the output
 subtree would still fit in place of the input one). *)
 
@@ -889,7 +896,7 @@ Inductive deletedHow(ki ko : EZ)(gi go : EB) : Set :=
 
 (*The second level of dependent return type for delete functions is delpair -
 which is really just a dependent pair (if you don't bother to count the
-inplicit args).  The reason for making it a separate return type is due to is
+implicit args).  The reason for making it a separate return type is due to is
 commonality among the remaining types below, and as a convenient output type
 for the delete rotation functions.*)
 
@@ -901,9 +908,9 @@ Ltac solve_delpair :=
 solver tactic for it in the usual way.  Why doesn't solve_delpair call
 reassoc?  It's a bit subtler than the reason for solve_tl: we obviously do
 care when deleting about contents, but by the time we need a delpair, all
-reassoc'ing must have already been done.  We can see that by the fact that we
+reassessing must have already been done.  We can see that by the fact that we
 don't even bother to make the contents a type index of delpair - it's a type
-parameter instead, and so doesn't filter out potential unifications by
+parameter instead, and so doesn't filter out potential unification's by
 pattern.  Said another way, delpair does not itself demonstrate that we've
 altered the contents of a tree in some way vs. some other way - as it has only
 one constructor. *)
@@ -965,6 +972,28 @@ Proof.
     + solve_delpair.
     + solve_delpair.
 Qed.
+
+(* One important point about the above delete rotation functions - they always
+return DSameK in their deletedHow field (which you can see by extracting
+them).  This is important for the performance of deletion of weak-AVL trees -
+and when combined with the fact that delete/delmin/delmax always return DSameK
+in cases when their recursive calls returned DSameK, means that deletion in
+weak-AVL trees, like insertion, performs at most one rotation.  We could have
+solved the above delete rotations functions in different ways, such that some
+of their branches return DLowerK, but didn't need to do that - and the lucky
+fact that we placed DSameK as the first constructor of deletedHow with DLowerK
+second forced the proof searches to try all DSameK combinations first.  If we
+want to enforce this fact, we could add another type parameter to delpair like
+so:
+
+Inductive delpair(k : EZ)(g eqks: EB)(f : EL) : Set := 
+| Delout`(t : wavltree ko go lgo rgo f)(d : deletedHow k ko g go)
+         (require_eqks : eqks=#true -> ko=k).
+
+and specified in the signatures of the delete rotations that eqks is #true,
+while allowing to have any value in the other delete functions.  Or, make ko
+itself a type parameter, and force ko=k in the delete rotation usage of
+delpair, but not elsewhere.  Etc.*)
 
 Optimize Heap.
 
@@ -1224,6 +1253,10 @@ Set Printing Width 120.
 the OCaml pair type:*)
 Extract Inductive delpair => "( * )" [ "" ].
 
-Extraction Inline negb. (*TBD: seeing (negb true) in some cases*)
+(*Somewhere in the boom tactic, a setgap usage is picking up "(negb true)" as
+its value instead of "false".  Obviously, they're the same, but it would be
+nice to figure out why this is happening.  Until then, we can just tell Coq to
+inline calls to negb to remove the blemish: *)
+Extraction Inline negb.
 
 Extraction "wavl.ml" find insert delete.
