@@ -77,7 +77,7 @@ Ltac poser H nH :=
       let g filt :=
           idtac;
           let H':=fresh in
-          (unshelve refine (let H':=_ in _));
+          (simple refine (let H':=_ in _));
           [..|specialize (nH H');subst H'];[filt..|f]
       in
       lazymatch type of nH with

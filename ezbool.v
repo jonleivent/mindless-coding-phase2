@@ -78,6 +78,7 @@ meaning by the type of formula in which they would have a chance of
 rewriting something. *)
 
 Set Default Proof Using "Type".
+Set Proof Using Clear Unused.
 
 Section Bool_Rewrites.
 
