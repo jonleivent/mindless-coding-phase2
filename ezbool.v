@@ -404,22 +404,33 @@ Ltac inst_EB E :=
      end));
   unfold E in *; clear E.
 
-Ltac unify_EBeq E Ealone :=
+Ltac unify_booleq E :=
+  rewrite Ezlhs_rw;
+  first [rewrite (Eziso1_rw (Eb2Z #E));
+          ring_simplify; notin_conc_rhs E
+        |rewrite (Eziso2_rw (Eb2Z #E));
+          ring_simplify; notin_conc_rhs E];
+  autorewrite with Eb2Z_eq_rws;
+  autorewrite with desharping_rws;
+  defactor_all_evars;
+  reflexivity.
+
+Ltac unify_EBeq E :=
   rewrite Ezlhs_rw;
   first [rewrite (Eziso1_rw (Eb2Z E));
-          ring_simplify; notin_conc_rhs Ealone
+          ring_simplify; notin_conc_rhs E
         |rewrite (Eziso2_rw (Eb2Z E));
-          ring_simplify; notin_conc_rhs Ealone];
+          ring_simplify; notin_conc_rhs E];
   autorewrite with Eb2Z_eq_rws;
   defactor_all_evars;
   reflexivity.
 
-Ltac unify_EZeq E Ealone :=
+Ltac unify_EZeq E :=
   rewrite Ezlhs_rw;
   first[rewrite (Eziso1_rw E);
-         ring_simplify; notin_conc_rhs Ealone
+         ring_simplify; notin_conc_rhs E
        |rewrite (Eziso2_rw E);
-         ring_simplify; notin_conc_rhs Ealone];
+         ring_simplify; notin_conc_rhs E];
   defactor_all_evars;
   reflexivity.
 
@@ -441,13 +452,13 @@ with solve_EBeq :=
         erasure as args of funs/ctors.  If this changes, as it would
         if we were developing a structure that, unlike wavltree, had Z
         args, then we will need to revisit this. *)
-        is_evar V; (*unify_EZeq (#E) E*) fail 999 "solve_EBeq found a Z evar" V
+        is_evar V; fail 999 "solve_EBeq found a Z evar" V
       | [E := ?V : EZ |- (@eq EZ _ _)] =>
-        is_evar V; unify_EZeq E E
+        is_evar V; unify_EZeq E
       | [E := ?V : EB |- (@eq EZ _ _)] =>
-        is_evar V; unify_EBeq E E
+        is_evar V; unify_EBeq E
       | [E := ?V : bool |- (@eq EZ _ _)] =>
-        is_evar V; unify_EBeq (#E) E
+        is_evar V; unify_booleq E
       | _ => idtac
       end;
       (*TBD - the following multimatch does too much, in that it tries
