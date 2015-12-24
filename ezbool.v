@@ -389,8 +389,7 @@ Ltac inst_bool E :=
        (instantiate (1:=b) in (Value of E)) +
        (instantiate (1:=negb b) in (Value of E))
      end));
-  unfold E in *; clear E;
-  autorewrite with simp_rws in *.
+  unfold E in *; clear E.
 
 Ltac inst_EB E :=
   ((instantiate (1:=#true) in (Value of E)) +
@@ -403,8 +402,7 @@ Ltac inst_EB E :=
        (instantiate (1:=#b) in (Value of E)) +
        (instantiate (1:=Enegb #b) in (Value of E))
      end));
-  unfold E in *; clear E;
-  autorewrite with simp_rws in *.
+  unfold E in *; clear E.
 
 Ltac unify_EBeq E Ealone :=
   rewrite Ezlhs_rw;

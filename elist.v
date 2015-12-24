@@ -217,10 +217,27 @@ Ltac reassoc :=
   rewrite ?Eapp_assoc;
   let rec f := idtac + (reassociate_step; f) in f.
 
-Tactic Notation "assoc" integer(N) :=
+Tactic Notation "assoc" integer(n) :=
   rewrite ?Eapp_assoc;
-  do N reassociate_step.
+  do n reassociate_step.
+
+Ltac rootify d :=
+  reassoc;
+  (lazymatch goal with
+      |- context [?X ++ ?Y] =>
+      lazymatch constr:(X ++ Y) with
+        _ ++ ^ d ++ _ => idtac
+      end
+    end).
 
 Ltac fnenil :=
   let rec f := (idtac + (apply fnenilright; f)) in
-  rewrite ?Eapp_assoc; f; first [apply fnenil2 | apply fnenil1].
+  let rec g := rewrite ?Eapp_assoc; f; solve [apply fnenil2 | apply fnenil1] in
+  match goal with
+  | |- ([] = [])%type => reflexivity
+  | H : ([] <> [])%type |- _ => contradict H; reflexivity
+  | |- (_ <> [])%type => g
+  | |- ([] <> _)%type => apply not_eq_sym; g
+  | H : (_ = [])%type |- _ => contradict H; g
+  | H : ([] = _)%type |- _ => symmetry in H; contradict H; g
+  end.
