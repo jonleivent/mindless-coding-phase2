@@ -336,9 +336,13 @@ with rsimp_fun F A :=
   else (rsimp_term F; rsimp_term A).
 
 Ltac rsimp_in H :=
+  try rewrite Ezlhs_rw in H;
+  try rewrite zlhs_rw in H;
   let T:=type of H in rsimp_term T.
 
 Ltac rsimp_goal :=
+  try rewrite Ezlhs_rw;
+  try rewrite zlhs_rw;
   lazymatch goal with
   | |- ?G => rsimp_term G
   end.
