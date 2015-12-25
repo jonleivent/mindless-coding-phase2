@@ -352,7 +352,15 @@ Section defs.
 
 End defs.
 
-Create HintDb SolveSortedDB discriminated.
+Create HintDb solveSortedDB discriminated.
+
+Hint Extern 10 (NotIn _ (_ ++ _)) =>
+  eapply NotInl; autorewrite with solveSortedDB : solveSortedDB.
+Hint Extern 10 (NotIn _ (_ ++ _)) =>
+  eapply NotInr; autorewrite with solveSortedDB : solveSortedDB.
+Hint Extern 10 (NotIn _ (_ :: _)) =>
+  eapply NotInCons; autorewrite with solveSortedDB : solveSortedDB.
+Hint Extern 10 (NotIn _ _) => eapply NotInNil : solveSortedDB.
 
 Hint Rewrite @redlts @redslt
      @ltssplit @sorted2both @rwslts @sorted2lts @sorted2slt @sorted2both2 @lts2lt @slt2lt

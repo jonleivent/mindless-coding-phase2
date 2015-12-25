@@ -330,7 +330,7 @@ Ltac ss_setup_tactic :=
 
 Ltac ss :=
 (*We'll use ss for solving any goal with an Esorted conclusion.*)
-  ss_setup_tactic; unerase; solve_sorted.
+  ss_setup_tactic; unerase; solve[solve_sorted].
 
 (*First example - the find function*)
 
@@ -346,12 +346,6 @@ contents.*)
 Inductive findResult(x : A) : EL -> Set :=
 | Found{fl fr} : findResult x (fl++^x++fr)
 | NotFound{f} : ENotIn x f -> findResult x f.
-
-Ltac solve_enotin :=
-(*To solve goals with an ENotIn conclusion, we only need a few lemmas:*)
-  unerase;
-  (apply NotInNil + apply NotInl + apply NotInr);
-  assumption.
 
 Ltac solve_find :=
 (*Piece together a tactic to solve findResults.*)
@@ -369,7 +363,7 @@ Ltac solve_find :=
   construct or destruct one level of tree at a time - hence other levels of
   associativity, if needed, will be visited when constructing/destructing
   those levels of the trees involved.*)
-  (eapply Found + (eapply NotFound; solve_enotin)).
+  (eapply Found + (eapply NotFound; ss)).
 
 Definition find(x : A)`(t : wavltree k g lg rg f) : findResult x f.
 (* The above signature is a complete specification with respect to all
@@ -1142,7 +1136,7 @@ Ltac solve_delete :=
   ((eapply Deleted;
    (idtac + (rewrite Eapp_nil_r || rewrite Eapp_nil_l));
    solve_delpair2)
-   + (eapply DNotFound; solve_enotin)).
+   + (eapply DNotFound; ss)).
 
 Definition delete(x : A)`(t : wavltree k g lg rg f) : deleteResult x k g f.
 Proof.

@@ -162,5 +162,3 @@ Section defs.
   Qed.
 
 End defs.
-
-Hint Resolve NotInNil NotInl NotInr.
