@@ -338,17 +338,21 @@ with rsimp_fun F A :=
 Ltac rsimp_in H :=
   try rewrite Ezlhs_rw in H;
   try rewrite zlhs_rw in H;
+  autorewrite with ensharping_rws in H;
+  autorewrite with term_rws in H;
   let T:=type of H in rsimp_term T.
 
-Ltac rsimp_goal :=
+Ltac rsimp_conc :=
   try rewrite Ezlhs_rw;
   try rewrite zlhs_rw;
+  autorewrite with ensharping_rws;
+  autorewrite with term_rws;
   lazymatch goal with
   | |- ?G => rsimp_term G
   end.
 
 Ltac rsimp :=
-  rsimp_goal;
+  rsimp_conc;
   hyps => loop rsimp_in.
 
 (************************************************************************)
@@ -409,7 +413,6 @@ Ltac inst_EB E :=
   unfold E in *; clear E.
 
 Ltac unify_booleq E :=
-  rewrite Ezlhs_rw;
   first [rewrite (Eziso1_rw (Eb2Z #E));
           ring_simplify; notin_conc_rhs E
         |rewrite (Eziso2_rw (Eb2Z #E));
@@ -420,7 +423,6 @@ Ltac unify_booleq E :=
   reflexivity.
 
 Ltac unify_EBeq E :=
-  rewrite Ezlhs_rw;
   first [rewrite (Eziso1_rw (Eb2Z E));
           ring_simplify; notin_conc_rhs E
         |rewrite (Eziso2_rw (Eb2Z E));
@@ -430,7 +432,6 @@ Ltac unify_EBeq E :=
   reflexivity.
 
 Ltac unify_EZeq E :=
-  rewrite Ezlhs_rw;
   first[rewrite (Eziso1_rw E);
          ring_simplify; notin_conc_rhs E
        |rewrite (Eziso2_rw E);
@@ -441,37 +442,26 @@ Ltac unify_EZeq E :=
 Ltac boom :=
   dintros;
   defactor_all_evars;
-  lazymatch goal with
-    |- ?G =>
-    tryif has_evar G then solve_EBeq else bang
-  end
-with solve_EBeq :=
-  first
-    [ simple_reflex
-    | factor_conc_evars;
-      match goal with
-      | [E := ?V : Z |- (@eq EZ _ _)] =>
-        (*We should never see a Z equality - only EZs - because we
-        don't call unerase until bang, and no Zs appear without
-        erasure as args of funs/ctors.  If this changes, as it would
-        if we were developing a structure that, unlike wavltree, had Z
-        args, then we will need to revisit this. *)
-        is_evar V; fail 999 "solve_EBeq found a Z evar" V
-      | [E := ?V : EZ |- (@eq EZ _ _)] =>
-        is_evar V; unify_EZeq E
-      | [E := ?V : EB |- (@eq EZ _ _)] =>
-        is_evar V; unify_EBeq E
-      | [E := ?V : bool |- (@eq EZ _ _)] =>
-        is_evar V; unify_booleq E
-      | _ => idtac
-      end;
-      (*TBD - the following multimatch does too much, in that it tries
-      all permutations of instantiations instead of just all
-      combinations.*)
-      multimatch goal with
-      | [E := ?V : EB |- _] =>
-        is_evar V; inst_EB E
-      | [E := ?V : bool |- _] =>
-        is_evar V; inst_bool E
-      end;
-      boom].
+  rsimp_conc;
+  try simple_reflex;
+  factor_all_evars;
+  match goal with
+  | [E := ?V : Z |- (@eq EZ _ _)] =>
+    (*We should never see a Z equality - only EZs - because we don't call
+      unerase until bang, and no Zs appear without erasure as args of
+      funs/ctors.  If this changes, as it would if we were developing a
+      structure that, unlike wavltree, had Z args, then we will need to
+      revisit this. *)
+    is_evar V; fail 999 "solve_EBeq found a Z evar" V
+  | [E := ?V : EZ |- (@eq EZ _ _)] => is_evar V; unify_EZeq E
+  | [E := ?V : EB |- (@eq EZ _ _)] => is_evar V; unify_EBeq E
+  | [E := ?V : bool |- (@eq EZ _ _)] => is_evar V; unify_booleq E
+  | _ => try bang
+  end;
+  check_in_prop;
+  (*TBD - the following multimatch does too much, in that it tries all
+    permutations of instantiations instead of just all combinations.*)
+  multimatch goal with
+  | [E := ?V : EB |- _] => is_evar V; inst_EB E; boom
+  | [E := ?V : bool |- _] => is_evar V; inst_bool E; boom
+  end.
