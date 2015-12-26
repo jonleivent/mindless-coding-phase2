@@ -390,25 +390,47 @@ combine b/negb b by delaying the sign?
 *)
 
 Ltac inst_bool E :=
-  ((instantiate (1:=true) in (Value of E)) +
+  ((multimatch goal with
+     | b := ?V : bool |- _ =>
+       is_evar V;
+       (instantiate (1:=V) in (Value of E) +
+        instantiate (1:=negb V) in (Value of E))
+     end) +
+   (instantiate (1:=true) in (Value of E)) +
    (instantiate (1:=false) in (Value of E)) +
    (multimatch goal with
      | b : bool |- _ =>
-       (instantiate (1:=b) in (Value of E)) +
-       (instantiate (1:=negb b) in (Value of E))
+       tryif has_value b
+       then fail
+       else (instantiate (1:=b) in (Value of E) +
+             instantiate (1:=negb b) in (Value of E))
      end));
   unfold E in *; clear E.
 
 Ltac inst_EB E :=
-  ((instantiate (1:=#true) in (Value of E)) +
+  ((multimatch goal with
+     | b := ?V : EB |- _ =>
+       is_evar V;
+       (instantiate (1:=V) in (Value of E) +
+        instantiate (1:=Enegb V) in (Value of E))
+     | b := ?V : bool |- _ =>
+       is_evar V;
+       (instantiate (1:=#V) in (Value of E) +
+        instantiate (1:=Enegb #V) in (Value of E))
+     end) +
+   (instantiate (1:=#true) in (Value of E)) +
    (instantiate (1:=#false) in (Value of E)) +
    (multimatch goal with
      | b : EB |- _ =>
-       (instantiate (1:=b) in (Value of E)) +
-       (instantiate (1:=Enegb b) in (Value of E))
+       tryif has_value b
+       then fail
+       else (instantiate (1:=b) in (Value of E) +
+             instantiate (1:=Enegb b) in (Value of E))
      | b : bool |- _ =>
-       (instantiate (1:=#b) in (Value of E)) +
-       (instantiate (1:=Enegb #b) in (Value of E))
+       tryif has_value b
+       then fail
+       else (instantiate (1:=#b) in (Value of E) +
+             instantiate (1:=Enegb #b) in (Value of E))
      end));
   unfold E in *; clear E.
 
