@@ -496,7 +496,6 @@ Proof.
     boom.
     boom.
     ss.
-    intro.
     boom.
     eapply IWasMissing.
     boom.
