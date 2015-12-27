@@ -754,13 +754,14 @@ Inductive tryLoweringResult`(t : wavltree k g lg rg f) : Set :=
 
 Definition tryLowering`(t : wavltree k g lg rg f) : tryLoweringResult t.
 Proof.
-  destruct t; dintros.
+  destruct t.
   - eapply TLtooLow.
-    tauto.
-  - destruct (gofis t2 true); dintros.
-    + destruct (gofis t1 true); dintros.
+    boom.
+  - destruct (gofis t2 true).
+    + destruct (gofis t1 true).
       * eapply TLlowered.
-        tauto.
+        boom.
+        subst.
         node.
         boom.
         boom.
@@ -1567,8 +1568,6 @@ Qed.
 Set Printing Width 120.
 
 Extract Inductive delpair => "( * )" [ "" ].
-
-Extraction Inline EqdepFacts.internal_eq_rew_r_dep. (*TBD: why?*)
 
 Extraction Inline negb.
 
