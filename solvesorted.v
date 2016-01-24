@@ -95,8 +95,9 @@ Section defs.
           { inversion H; assumption. }
         * simpl. constructor.
           { apply IHl. inversion H. assumption. }
-          { inversion H. subst. eapply desort. 
-            instantiate (2:=nil). eassumption. }
+          { inversion H. subst.
+            eapply @desort with (l1:=nil).
+            eassumption. }
   Qed.
 
   Lemma sorted2both : forall l1 l2 a, sorted (l1++a::l2) <-> l1 <! a /\ a !< l2.

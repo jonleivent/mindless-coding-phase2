@@ -376,6 +376,35 @@ Ltac bang :=
    | _ => congruence
    end).
 
+Ltac clear_evars :=
+  (*assumes all evars are factored*)
+  repeat match goal with
+         | H := ?V |- _ => is_evar V; clearbody H
+         end.
+
+Ltac hyps_have_evars :=
+  (*assumes all evars are factored*)
+  match goal with
+    H := ?V |- _ =>
+    is_evar V;
+    lazymatch goal with
+    | _ : context[H] |- _ => idtac
+    | _ := context[H] |- _ => idtac
+    end
+  end.
+
+Ltac nbang :=
+  (*assumes all evars are factored*)
+  intros;
+  tryif hyps_have_evars then idtac
+  else
+  lazymatch goal with
+    |- ?G =>
+    tryif (let x := constr:((ltac:(intros; clear_evars; bang)):(G -> False)) in idtac)
+    then fail
+    else idtac
+  end.
+
 Ltac check_cycle V Sub :=
   lazymatch Sub with context[V] => fail | _ => idtac end.
 
@@ -387,23 +416,31 @@ Ltac notin_conc_rhs E :=
 
 (* TBD: can we speed up the inst funs by using a bool xor fun to
 combine b/negb b by delaying the sign?
-*)
+ *)
+
+Ltac unify_evar E V :=
+  (*instantiate (1:=V) in (Value of E).*)
+  let Ee := get_value E in
+  is_evar Ee;
+  tryif constr_eq Ee V
+  then fail
+  else unify Ee V.
 
 Ltac inst_bool E :=
   ((multimatch goal with
      | b := ?V : bool |- _ =>
        is_evar V;
-       (instantiate (1:=V) in (Value of E) +
-        instantiate (1:=negb V) in (Value of E))
+       (unify_evar E (V) +
+        unify_evar E (negb V))
      end) +
-   (instantiate (1:=true) in (Value of E)) +
-   (instantiate (1:=false) in (Value of E)) +
+   (unify_evar E (true)) +
+   (unify_evar E (false)) +
    (multimatch goal with
      | b : bool |- _ =>
        tryif has_value b
        then fail
-       else (instantiate (1:=b) in (Value of E) +
-             instantiate (1:=negb b) in (Value of E))
+       else (unify_evar E (b) +
+             unify_evar E (negb b))
      end));
   unfold E in *; clear E.
 
@@ -411,26 +448,26 @@ Ltac inst_EB E :=
   ((multimatch goal with
      | b := ?V : EB |- _ =>
        is_evar V;
-       (instantiate (1:=V) in (Value of E) +
-        instantiate (1:=Enegb V) in (Value of E))
+       (unify_evar E (V) +
+        unify_evar E (Enegb V))
      | b := ?V : bool |- _ =>
        is_evar V;
-       (instantiate (1:=#V) in (Value of E) +
-        instantiate (1:=Enegb #V) in (Value of E))
+       (unify_evar E (#V) +
+        unify_evar E (Enegb #V))
      end) +
-   (instantiate (1:=#true) in (Value of E)) +
-   (instantiate (1:=#false) in (Value of E)) +
+   (unify_evar E (#true)) +
+   (unify_evar E (#false)) +
    (multimatch goal with
      | b : EB |- _ =>
        tryif has_value b
        then fail
-       else (instantiate (1:=b) in (Value of E) +
-             instantiate (1:=Enegb b) in (Value of E))
+       else (unify_evar E (b) +
+             unify_evar E (Enegb b))
      | b : bool |- _ =>
        tryif has_value b
        then fail
-       else (instantiate (1:=#b) in (Value of E) +
-             instantiate (1:=Enegb #b) in (Value of E))
+       else (unify_evar E (#b) +
+             unify_evar E (Enegb #b))
      end));
   unfold E in *; clear E.
 
@@ -461,9 +498,13 @@ Ltac unify_EZeq E :=
   defactor_all_evars;
   reflexivity.
 
-Ltac boom :=
+Ltac boom_internal doinsts :=
   dintros;
   defactor_all_evars;
+  lazymatch goal with
+  | |- (@eq EB _ _) => try reflexivity; rewrite <-Eb2Z_inj_rw
+  | _ => idtac
+  end;
   rsimp_conc;
   try simple_reflex;
   factor_all_evars;
@@ -478,12 +519,24 @@ Ltac boom :=
   | [E := ?V : EZ |- (@eq EZ _ _)] => is_evar V; unify_EZeq E
   | [E := ?V : EB |- (@eq EZ _ _)] => is_evar V; unify_EBeq E
   | [E := ?V : bool |- (@eq EZ _ _)] => is_evar V; unify_booleq E
-  | _ => try bang
+  | _ =>  try bang
+  end;
+  match goal with
+  | [E := ?V : EB |- _] => is_evar V
+  | [E := ?V : bool |- _] => is_evar V
   end;
   check_in_prop;
+  lazymatch doinsts with
+  | 0 => idtac
+  | false => fail "boom prevented from trying bool/EB instantiations"
+  | true => nbang
+  | I => shelve
+  end;
   (*TBD - the following multimatch does too much, in that it tries all
     permutations of instantiations instead of just all combinations.*)
   multimatch goal with
-  | [E := ?V : EB |- _] => is_evar V; inst_EB E; boom
-  | [E := ?V : bool |- _] => is_evar V; inst_bool E; boom
+  | [E := ?V : EB |- _] => is_evar V; inst_EB E; boom_internal 0
+  | [E := ?V : bool |- _] => is_evar V; inst_bool E; boom_internal 0
   end.
+
+Ltac boom := boom_internal 0.

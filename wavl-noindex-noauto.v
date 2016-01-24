@@ -136,6 +136,8 @@ Ltac bang_setup_tactic ::=
   in
   hyps => loop f.
 
+Tactic Notation "boom" := boom_internal false.
+
 Definition isMissing`(t : wavltree ek g lg rg f)
   : {f = [] /\ lg = #false /\ rg = #false /\ exists k, #k = ek /\ k = -1} + {f <> [] /\ exists k, #k = ek /\ k >= 0}.
 Proof.
@@ -273,7 +275,7 @@ Proof.
     boom.
     missing.
     reflexivity.
-    boom.
+    boom_internal true.
     boom.
     boom.
     boom.
@@ -325,7 +327,7 @@ Proof.
       boom.
       gap.
       force exact lt1.
-      boom.
+      boom_internal true.
       boom.
       force exact lt2_1.
       boom.
@@ -346,6 +348,8 @@ Proof.
       ss.
       boom.
 Qed.
+
+Extraction rot1.
 
 Definition rot2
            `(lt : wavltree (k #- #2) #true llg lrg lf)
@@ -373,7 +377,7 @@ Proof.
     boom.
     missing.
     boom.
-    boom.
+    boom_internal true.
     boom.
     boom.
     ss.
@@ -439,7 +443,7 @@ Proof.
       boom.
       gap.
       force exact rt2.
-      boom.
+      boom_internal true.
       ss.
       boom.
       ss.
@@ -496,7 +500,7 @@ Proof.
     boom.
     boom.
     ss.
-    boom.
+    boom_internal true.
     eapply IWasMissing.
     boom.
     boom.
@@ -813,15 +817,15 @@ Proof.
     boom.
     missing.
     reflexivity.
-    boom.
+    boom_internal true.
     boom.
     boom.
     ss.
-    boom.
+    boom_internal true.
     boom.
     gap.
     force exact t2_2.
-    boom.
+    boom_internal true.
     ss.
     boom.
     eapply DSameK.
@@ -847,7 +851,8 @@ Proof.
       boom.
       gap.
       force exact t2_2.
-      boom.
+      rsimp.
+      boom_internal true. (**)
       ss.
       boom.
       eapply DSameK.
@@ -865,7 +870,7 @@ Proof.
       force exact t.
       boom.
       force exact w1.
-      boom.
+      boom_internal true.
       ss.
       boom.
       boom.
@@ -873,15 +878,15 @@ Proof.
       boom.
       boom.
       force exact w2.
-      boom.
+      boom_internal true.
       boom.
       gap.
       force exact t2_2.
-      boom.
+      boom_internal true.
       ss.
       boom.
       ss.
-      boom.
+      boom_internal true.
       eapply DSameK.
       boom.
       boom.
@@ -936,12 +941,12 @@ Proof.
     boom.
     (*Now we have a collection of gap-only evar goals.  We can start by
     solving those with a single evar:*)
-    5:boom.
+    5:boom_internal true.
     (*which creates others with a single evar:*)
     4:boom.
     (*The remainder all have at least two gap evars.  Probably best to solve
     them all together to enable backtracking:*)
-    all:[>boom..].
+    all:[>boom_internal true..].
   - minlines.
     destruct (gofis t2_1 false); dintros.
     + rootify d0.
@@ -957,7 +962,7 @@ Proof.
       boom.
       boom.
       force exact t2_2.
-      boom.
+      boom_internal true. (**)
       boom.
       force exact t.
       boom.
@@ -980,7 +985,7 @@ Proof.
       force exact t2_1.
       boom.
       force exact w1.
-      boom.
+      boom_internal true.
       ss.
       boom.
       boom.
@@ -988,15 +993,15 @@ Proof.
       boom.
       boom.
       force exact w2.
-      boom.
+      boom_internal true.
       boom.
       gap.
       force exact t.
-      boom.
+      boom_internal true.
       ss.
       boom.
       ss.
-      boom.
+      boom_internal true.
       eapply DSameK.
       boom.
       boom.
@@ -1099,7 +1104,7 @@ Proof.
            boom.
            gap.
            force exact t2.
-           boom.
+           boom_internal true. (**)
            ss.
            boom.
            eapply DLowerK.
@@ -1207,9 +1212,9 @@ Proof.
            ss.
            all:cycle 1.
            eapply DLowerK.
+           boom_internal true.
            boom.
-           boom.
-           boom.
+           boom_internal true.
            boom.
 Qed.
 
@@ -1266,9 +1271,9 @@ Proof.
                   boom.
                   gap.
                   force exact t.
-                  boom.
+                  boom_internal true.
                   ss.
-                  boom.
+                  boom_internal true.
                   eapply DLowerK.
                   boom.
                   boom.
@@ -1328,7 +1333,7 @@ Proof.
               boom.
               gap.
               force exact t2.
-              boom.
+              boom_internal true. (**)
               ss.
               boom.
               eapply DLowerK.
@@ -1371,7 +1376,7 @@ Proof.
                  boom.
                  gap.
                  force exact t2.
-                 boom.
+                 boom_internal true.
                  ss.
                  boom.
                  eapply DLowerK.
@@ -1420,11 +1425,11 @@ Proof.
                  boom.
                  missing.
                  reflexivity.
-                 boom.
+                 boom_internal true.
                  boom.
                  boom.
                  ss.
-                 boom.
+                 boom_internal true.
                  eapply DLowerK.
                  boom.
                  boom.
@@ -1484,7 +1489,7 @@ Proof.
                  force exact t1.
                  boom.
                  force exact t.
-                 boom.
+                 boom_internal true.
                  ss.
                  boom.
                  eapply DLowerK.
@@ -1536,9 +1541,9 @@ Proof.
                  boom.
                  gap.
                  force exact t.
-                 boom.
+                 boom_internal true.
                  ss.
-                 boom.
+                 boom_internal true.
                  eapply DLowerK.
                  boom.
                  boom.

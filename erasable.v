@@ -103,25 +103,9 @@ Ltac check_in_prop :=
   end.
 
 Ltac unerase_internal :=
-  (unerase_evars;
    unerase_hyps;
    autorewrite with unerase_rws;
-   try apply erasable)
-with unerase_evars :=
-  factor_all_evars;
-  let f H :=
-      try (let V:=get_value H in
-           is_evar V;
-           let tH:=type of H in
-           let ttH:=type of tH in
-           try (constr_eq ttH Prop;
-                instantiate (1:=ltac:(unerase_internal)) in (Value of H));
-           unfold H in *; clear H)
-  in
-  hyps => loop f.
-
-(*unerase_evars uglifies goals that depend on those evars*)
-Ltac unerase_evars ::=idtac.
+   try apply erasable.
 
 Ltac unerase :=
   intros;

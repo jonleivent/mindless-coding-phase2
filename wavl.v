@@ -96,9 +96,12 @@ Esorted goals and ENotIn goals on ELs. *)
     (eqk : k = #(-1))
     (*It's also similarly convenient to provide false as the erased value for
     the erased lg and rg fields.  Obviously, a Missing node has no children,
-    but these fake value allow for proofs that again don't bother to check if
+    but these fake values allow for proofs that again don't bother to check if
     a wavltree is Missing or not and which don't need to rely on projection
-    functions.  Damn convenient!*)
+    functions.  In this case, the tryLowering function is simplified by making
+    these both false - as otherwise, the tryLoweringResult would need a
+    separate constructor for the Missing case, instead of using the TLtooLow
+    constructor for that case.*)
     (eqlg : lg=#false)
     (eqrg : rg=#false)
     (*Note that we didn't constrain the type parameter g for this Missing ctor
