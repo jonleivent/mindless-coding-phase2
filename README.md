@@ -61,54 +61,60 @@ generated (in the .ml files) completely unburdened by proof-required parts.
 
 What are the underlying contributions enabling this result?:
 
-1. True Erasability.  I wish Coq had this built in, but it doesn't (Idris
-does, but Idris was still not quite mature enough to handle the other
-complexity of this project last I checked; Agda doesn't have true erasability,
-but can handle the other complexity).  Instead, Coq's erasure of Props and
-some type args has to be enhanced via. erasable.v.  However, when this is done
-(with sufficient care so as not to become inconsistent), the OCaml output code
-is as good as one would expect from an expert developer, and is completely
-free of all required-only-for-proving elements.  Claiming this as a
-"contribution" is perhaps claiming too much, as this kind of erasability has
-been suggested before.  However, this project attempts to demonstrate how
-important a feature this is (or would be).
+* True Erasability.
 
-As the erasability feature is implemented here (Coq Props + erasable.v), one
-important detail for nay-sayers to notice is that the impact on the Coq source
-files wavl.v and wavl-noninter.v is very minor.  While it is true that certain
-types need to be mirrored as erasable types (EZ for Z, EB for bool, EL for
-list A), as well as certain functions, the definitions are trivial.
+  I wish Coq had this built in, but it doesn't (Idris does, but Idris was
+  still not quite mature enough to handle the other complexity of this project
+  last I checked; Agda doesn't have true erasability, but can handle the other
+  complexity).  Instead, Coq's erasure of Props and some type args has to be
+  enhanced via. erasable.v.  However, when this is done (with sufficient care
+  so as not to become inconsistent), the OCaml output code is as good as one
+  would expect from an expert developer, and is completely free of all
+  required-only-for-proving elements.  Claiming this as a "contribution" is
+  perhaps claiming too much, as this kind of erasability has been suggested
+  before.  However, this project attempts to demonstrate how important a
+  feature this is (or would be).
 
-Another important detail is that implementations of erasability similar to
-this one (as opposed to Coq's "Extraction Implicit" mechanism, for example)
-prevents automated proof search, as well as the programmer, from accidentally
-using elements marked for erasure in a way that prevents their eventual
-erasure.
+  As the erasability feature is implemented here (Coq Props + erasable.v), one
+  important detail for nay-sayers to notice is that the impact on the Coq
+  source files wavl.v and wavl-noninter.v is very minor.  While it is true
+  that certain types need to be mirrored as erasable types (EZ for Z, EB for
+  bool, EL for list A), as well as certain functions, the definitions are
+  trivial.
 
-2. Specialized (semi)decision procedures for types used in specifications.
-The files sorted.v and solvesorted.v provide a (semi)decision procedure (semi
-only because I haven't determined it is complete, but it has held up under
-considerable stress) for sorted lists of arbitrary elements.  The Examples at
-the end of solvesorted.v demonstrate some of what this decision procedure can
-decide.
+  Another important detail is that implementations of erasability similar to
+  this one (as opposed to Coq's "Extraction Implicit" mechanism, for example)
+  prevents automated proof search, as well as the programmer, from
+  accidentally using elements marked for erasure in a way that prevents their
+  eventual erasure.
 
-The file ezbool.v provides a (semi)decision procedure (or, rather enhances the
-already existent ones omega and ring) for bools and integers (Z).  The
-enhancements enable multi-goal solution using Coq's (new to version 8.5)
-backtracking proof search capabilities, including techniques for the solution
-of subgoals sharing existential variables (evars).  I believe this may be one
-of the first Coq developments to exploit backtracking in this way.
+* Specialized (semi)decision procedures for types used in specifications.
 
-As a result, it becomes very easy to write small specialized proof-search
-tactics (solve_find, solve_wavl, solve_insert, etc.) for each function, and
-use them in a predictable and consistent way to remove the burden of algorithm
-implementation - even in cases where one does not know the algorithm, nor even
-know if an algorithm exists (as was the case with wavltrees/gaptrees).
+  The files sorted.v and solvesorted.v provide a (semi)decision procedure
+  (semi only because I haven't determined it is complete, but it has held up
+  under considerable stress) for sorted lists of arbitrary elements.  The
+  Examples at the end of solvesorted.v demonstrate some of what this decision
+  procedure can decide.
 
-The important point to these (semi)decision procedures is that they are
-generic - nothing about them restricts their usage to wavltrees, or to just
-binary trees, etc.  They are developed once, and should be usable by a large
-variety of dependent-type driven developments (although they may not be
-sufficiently complete yet).
+  The file ezbool.v provides a (semi)decision procedure (or, rather enhances
+  the already existent ones omega and ring) for bools and integers (Z).  The
+  enhancements enable multi-goal solution using Coq's (new to version 8.5)
+  backtracking proof search capabilities, including techniques for the
+  solution of subgoals sharing existential variables (evars).  I believe this
+  may be one of the first Coq developments to exploit backtracking in this
+  way.
+
+  As a result, it becomes very easy to write small specialized proof-search
+  tactics (solve_find, solve_wavl, solve_insert, etc.) for each function, and
+  use them in a predictable and consistent way to remove the burden of
+  algorithm implementation - even in cases where one does not know the
+  algorithm, nor even know if an algorithm exists (as was the case with
+  wavltrees/gaptrees).
+
+  The important point to these (semi)decision procedures is that they are
+  generic - nothing about them restricts their usage to wavltrees, or to just
+  binary trees, etc.  They are developed once, and should be usable by a large
+  variety of dependent-type driven developments (although they may not be
+  sufficiently complete yet).
 
 
