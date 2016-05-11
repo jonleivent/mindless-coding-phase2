@@ -30,14 +30,8 @@ let ordA =
   failwith "AXIOM TO BE REALIZED"
 
 type wavltree =
+| Node of bool * a * wavltree * wavltree
 | Missing
-| Node of bool * wavltree * a * wavltree
-
-(** val isMissing : wavltree -> bool **)
-
-let isMissing = function
-| Missing -> true
-| Node (_, _, _, _) -> false
 
 type findResult =
 | Found
@@ -46,58 +40,64 @@ type findResult =
 (** val find : a -> wavltree -> findResult **)
 
 let rec find x = function
-| Missing -> NotFound
-| Node (_, lc, d, rc) ->
+| Node (_, d, lw, rw) ->
   (match ordA.compare_spec x d with
    | CompEqT -> Found
-   | CompLtT -> find x lc
-   | CompGtT -> find x rc)
+   | CompLtT -> find x lw
+   | CompGtT -> find x rw)
+| Missing -> NotFound
 
 (** val setgap : wavltree -> bool -> wavltree **)
 
-let setgap t g =
-  match t with
+let setgap w og =
+  match w with
+  | Node (_, d, lw, rw) -> Node (og, d, lw, rw)
   | Missing -> Missing
-  | Node (_, lc, d, rc) -> Node (g, lc, d, rc)
 
 (** val getgap : wavltree -> bool **)
 
 let getgap = function
+| Node (g0, _, _, _) -> g0
 | Missing -> false
-| Node (ug, _, _, _) -> ug
 
-(** val gofis : wavltree -> bool -> bool **)
+(** val isgap : wavltree -> bool -> bool **)
 
-let gofis t ug =
-  match t with
+let isgap w g' =
+  match w with
+  | Node (g0, _, _, _) -> (=) g' g0
   | Missing -> false
-  | Node (ug0, _, _, _) -> if ug then if ug0 then true else false else if ug0 then false else true
 
-(** val rot1 : wavltree -> a -> wavltree -> bool -> wavltree **)
+(** val isMissing : wavltree -> bool **)
 
-let rot1 lt x rt g =
-  match lt with
+let isMissing = function
+| Node (_, _, _, _) -> false
+| Missing -> true
+
+(** val irot1 : wavltree -> a -> wavltree -> bool -> wavltree **)
+
+let irot1 lw x rw g =
+  match lw with
+  | Node (_, d, lw0, rw0) ->
+    (match rw0 with
+     | Node (g1, d0, lw1, rw1) ->
+       if g1
+       then Node (g, d, lw0, (Node (false, x, (setgap rw0 false), (setgap rw false))))
+       else Node (g, d0, (Node (false, d, (setgap lw0 false), lw1)), (Node (false, x, rw1, (setgap rw false))))
+     | Missing -> Node (g, d, lw0, (Node (false, x, Missing, (setgap rw false)))))
   | Missing -> assert false (* absurd case *)
-  | Node (_, lc, d, rc) ->
-    (match rc with
-     | Missing -> Node (g, lc, d, (Node (false, Missing, x, (setgap rt false))))
-     | Node (ug0, lc0, d0, rc0) ->
-       if ug0
-       then Node (g, lc, d, (Node (false, (Node (false, lc0, d0, rc0)), x, (setgap rt false))))
-       else Node (g, (Node (false, (setgap lc false), d, lc0)), d0, (Node (false, rc0, x, (setgap rt false)))))
 
-(** val rot2 : wavltree -> a -> wavltree -> bool -> wavltree **)
+(** val irot2 : wavltree -> a -> wavltree -> bool -> wavltree **)
 
-let rot2 lt x rt g =
-  match rt with
+let irot2 lw x rw g =
+  match rw with
+  | Node (_, d, lw0, rw0) ->
+    (match lw0 with
+     | Node (g1, d0, lw1, rw1) ->
+       if g1
+       then Node (g, d, (Node (false, x, (setgap lw false), (setgap lw0 false))), rw0)
+       else Node (g, d0, (Node (false, x, (setgap lw false), lw1)), (Node (false, d, rw1, (setgap rw0 false))))
+     | Missing -> Node (g, d, (Node (false, x, (setgap lw false), Missing)), rw0))
   | Missing -> assert false (* absurd case *)
-  | Node (_, lc, d, rc) ->
-    (match lc with
-     | Missing -> Node (g, (Node (false, (setgap lt false), x, Missing)), d, rc)
-     | Node (ug0, lc0, d0, rc0) ->
-       if ug0
-       then Node (g, (Node (false, (setgap lt false), x, (Node (false, lc0, d0, rc0)))), d, rc)
-       else Node (g, (Node (false, (setgap lt false), x, lc0)), d0, (Node (false, rc0, d, (setgap rc false)))))
 
 type insertedHow =
 | ISameK
@@ -105,61 +105,61 @@ type insertedHow =
 | IHigherK
 
 type insertResult =
-| FoundByInsert
 | Inserted of wavltree * insertedHow
+| FoundByInsert
 
 (** val insert : a -> wavltree -> insertResult **)
 
 let rec insert x = function
-| Missing -> Inserted ((Node (false, Missing, x, Missing)), IWasMissing)
-| Node (ug, lc, d, rc) ->
+| Node (g0, d, lw, rw) ->
   (match ordA.compare_spec x d with
    | CompEqT -> FoundByInsert
    | CompLtT ->
-     (match insert x lc with
-      | FoundByInsert -> FoundByInsert
-      | Inserted (t0, i) ->
-        (match i with
-         | ISameK -> Inserted ((Node (ug, t0, d, rc)), ISameK)
+     (match insert x lw with
+      | Inserted (ow, insertedHow0) ->
+        (match insertedHow0 with
+         | ISameK -> Inserted ((Node (g0, d, ow, rw)), ISameK)
          | IWasMissing ->
-           if isMissing rc
-           then Inserted ((Node (false, t0, d, Missing)), IHigherK)
-           else Inserted ((Node (ug, t0, d, rc)), ISameK)
+           if isMissing rw
+           then Inserted ((Node (false, d, ow, Missing)), IHigherK)
+           else Inserted ((Node (g0, d, ow, rw)), ISameK)
          | IHigherK ->
-           if getgap lc
-           then Inserted ((Node (ug, t0, d, rc)), ISameK)
-           else if gofis rc false
-                then Inserted ((Node (false, t0, d, (setgap rc true))), IHigherK)
-                else Inserted ((rot1 t0 d rc ug), ISameK)))
+           if getgap lw
+           then Inserted ((Node (g0, d, ow, rw)), ISameK)
+           else if isgap rw false
+                then Inserted ((Node (false, d, ow, (setgap rw true))), IHigherK)
+                else Inserted ((irot1 ow d rw g0), ISameK))
+      | FoundByInsert -> FoundByInsert)
    | CompGtT ->
-     (match insert x rc with
-      | FoundByInsert -> FoundByInsert
-      | Inserted (t0, i) ->
-        (match i with
-         | ISameK -> Inserted ((Node (ug, lc, d, t0)), ISameK)
+     (match insert x rw with
+      | Inserted (ow, insertedHow0) ->
+        (match insertedHow0 with
+         | ISameK -> Inserted ((Node (g0, d, lw, ow)), ISameK)
          | IWasMissing ->
-           if isMissing lc
-           then Inserted ((Node (false, Missing, d, t0)), IHigherK)
-           else Inserted ((Node (ug, lc, d, t0)), ISameK)
+           if isMissing lw
+           then Inserted ((Node (false, d, Missing, ow)), IHigherK)
+           else Inserted ((Node (g0, d, lw, ow)), ISameK)
          | IHigherK ->
-           if getgap rc
-           then Inserted ((Node (ug, lc, d, t0)), ISameK)
-           else if gofis lc false
-                then Inserted ((Node (false, (setgap lc true), d, t0)), IHigherK)
-                else Inserted ((rot2 lc d t0 ug), ISameK))))
+           if getgap rw
+           then Inserted ((Node (g0, d, lw, ow)), ISameK)
+           else if isgap lw false
+                then Inserted ((Node (false, d, (setgap lw true), ow)), IHigherK)
+                else Inserted ((irot2 lw d ow g0), ISameK))
+      | FoundByInsert -> FoundByInsert))
+| Missing -> Inserted ((Node (false, x, Missing, Missing)), IWasMissing)
 
 type tryLoweringResult =
-| TLtooLow
 | TLlowered of wavltree
+| TLtooLow
 
 (** val tryLowering : wavltree -> tryLoweringResult **)
 
 let tryLowering = function
-| Missing -> TLtooLow
-| Node (ug, lc, d, rc) ->
-  if gofis lc true
-  then if gofis rc true then TLlowered (Node (ug, (setgap lc false), d, (setgap rc false))) else TLtooLow
+| Node (g0, d, lw, rw) ->
+  if isgap lw true
+  then if isgap rw true then TLlowered (Node (g0, d, (setgap lw false), (setgap rw false))) else TLtooLow
   else TLtooLow
+| Missing -> TLtooLow
 
 type deletedHow =
 | DSameK
@@ -167,79 +167,71 @@ type deletedHow =
 
 (** val drot1 : wavltree -> a -> wavltree -> bool -> ( * ) **)
 
-let drot1 t d t2 ug =
-  match t2 with
+let drot1 lw x rw g =
+  match rw with
+  | Node (_, d, lw0, rw0) ->
+    (match lw0 with
+     | Node (_, d0, lw1, rw1) ->
+       if isgap rw0 false
+       then (DSameK, (Node (g, d, (Node (false, x, lw, lw0)), (setgap rw0 true))))
+       else (DSameK, (Node (g, d0, (Node (true, x, (setgap lw false), lw1)), (Node (true, d, rw1,
+              (setgap rw0 false))))))
+     | Missing -> (DSameK, (Node (g, d, (Node (true, x, (setgap lw false), Missing)), (setgap rw0 true)))))
   | Missing -> assert false (* absurd case *)
-  | Node (_, lc, d0, rc) ->
-    (match lc with
-     | Missing -> ((Node (ug, (Node (true, (setgap t false), d, Missing)), d0, (setgap rc true))), DSameK)
-     | Node (_, lc0, d1, rc0) ->
-       if gofis rc false
-       then ((Node (ug, (Node (false, t, d, lc)), d0, (setgap rc true))), DSameK)
-       else ((Node (ug, (Node (true, (setgap t false), d, lc0)), d1, (Node (true, rc0, d0, (setgap rc false))))),
-              DSameK))
 
 (** val drot2 : wavltree -> a -> wavltree -> bool -> ( * ) **)
 
-let drot2 t2 d t ug =
-  match t2 with
+let drot2 lw x rw g =
+  match lw with
+  | Node (_, d, lw0, rw0) ->
+    (match rw0 with
+     | Node (_, d0, lw1, rw1) ->
+       if isgap lw0 false
+       then (DSameK, (Node (g, d, (setgap lw0 true), (Node (false, x, rw0, rw)))))
+       else (DSameK, (Node (g, d0, (Node (true, d, (setgap lw0 false), lw1)), (Node (true, x, rw1,
+              (setgap rw false))))))
+     | Missing -> (DSameK, (Node (g, d, (setgap lw0 true), (Node (true, x, Missing, (setgap rw false)))))))
   | Missing -> assert false (* absurd case *)
-  | Node (_, lc, d0, rc) ->
-    (match rc with
-     | Missing -> ((Node (ug, (setgap lc true), d0, (Node (true, Missing, d, (setgap t false))))), DSameK)
-     | Node (_, lc0, d1, rc0) ->
-       if gofis lc false
-       then ((Node (ug, (setgap lc true), d0, (Node (false, rc, d, t)))), DSameK)
-       else ((Node (ug, (Node (true, (setgap lc false), d0, lc0)), d1, (Node (true, rc0, d, (setgap t false))))),
-              DSameK))
 
-type delminResult =
-| NoMin
-| MinDeleted of a * ( * )
-
-(** val delmin : wavltree -> delminResult **)
+(** val delmin : wavltree -> ( * ) **)
 
 let rec delmin = function
-| Missing -> NoMin
-| Node (ug, lc, d, rc) ->
-  (match delmin lc with
-   | NoMin -> MinDeleted (d, ((setgap rc true), DLowerK))
-   | MinDeleted (min, dr) ->
-     let (t, d0) = dr in
-     (match d0 with
-      | DSameK -> MinDeleted (min, ((Node (ug, t, d, rc)), DSameK))
-      | DLowerK ->
-        if gofis rc false
-        then if gofis lc true
-             then (match tryLowering rc with
-                   | TLtooLow -> MinDeleted (min, (drot1 t d rc ug))
-                   | TLlowered t' -> MinDeleted (min, ((Node (true, t, d, t')), DLowerK)))
-             else MinDeleted (min, ((Node (ug, t, d, rc)), DSameK))
-        else MinDeleted (min, ((Node (true, (setgap t (getgap lc)), d, (setgap rc false))), DLowerK))))
+| Node (g0, d, lw, rw) ->
+  if isMissing lw
+  then (d, (DLowerK, (setgap rw true)))
+  else let (min, dp) = delmin lw in
+       let (dh, ow) = dp in
+       (match dh with
+        | DSameK -> (min, (DSameK, (Node (g0, d, ow, rw))))
+        | DLowerK ->
+          if isgap rw false
+          then if isgap lw true
+               then (match tryLowering rw with
+                     | TLlowered ow0 -> (min, (DLowerK, (Node (true, d, ow, ow0))))
+                     | TLtooLow -> (min, (drot1 ow d rw g0)))
+               else (min, (DSameK, (Node (g0, d, ow, rw))))
+          else (min, (DLowerK, (Node (true, d, (setgap ow (getgap lw)), (setgap rw false))))))
+| Missing -> assert false (* absurd case *)
 
-type delmaxResult =
-| NoMax
-| MaxDeleted of a * ( * )
-
-(** val delmax : wavltree -> delmaxResult **)
+(** val delmax : wavltree -> ( * ) **)
 
 let rec delmax = function
-| Missing -> NoMax
-| Node (ug, lc, d, rc) ->
-  (match delmax rc with
-   | NoMax -> MaxDeleted (d, ((setgap lc true), DLowerK))
-   | MaxDeleted (max, dr) ->
-     let (t, d0) = dr in
-     (match d0 with
-      | DSameK -> MaxDeleted (max, ((Node (ug, lc, d, t)), DSameK))
-      | DLowerK ->
-        if gofis lc false
-        then if gofis rc true
-             then (match tryLowering lc with
-                   | TLtooLow -> MaxDeleted (max, (drot2 lc d t ug))
-                   | TLlowered t' -> MaxDeleted (max, ((Node (true, t', d, t)), DLowerK)))
-             else MaxDeleted (max, ((Node (ug, lc, d, t)), DSameK))
-        else MaxDeleted (max, ((Node (true, (setgap lc false), d, (setgap t (getgap rc)))), DLowerK))))
+| Node (g0, d, lw, rw) ->
+  if isMissing rw
+  then (d, (DLowerK, (setgap lw true)))
+  else let (max, dp) = delmax rw in
+       let (dh, ow) = dp in
+       (match dh with
+        | DSameK -> (max, (DSameK, (Node (g0, d, lw, ow))))
+        | DLowerK ->
+          if isgap lw false
+          then if isgap rw true
+               then (match tryLowering lw with
+                     | TLlowered ow0 -> (max, (DLowerK, (Node (true, d, ow0, ow))))
+                     | TLtooLow -> (max, (drot2 lw d ow g0)))
+               else (max, (DSameK, (Node (g0, d, lw, ow))))
+          else (max, (DLowerK, (Node (true, d, (setgap lw false), (setgap ow (getgap rw)))))))
+| Missing -> assert false (* absurd case *)
 
 type deleteResult =
 | Deleted of ( * )
@@ -248,61 +240,52 @@ type deleteResult =
 (** val delete : a -> wavltree -> deleteResult **)
 
 let rec delete x = function
-| Missing -> DNotFound
-| Node (ug, lc, d, rc) ->
+| Node (g0, d, lw, rw) ->
   (match ordA.compare_spec x d with
    | CompEqT ->
-     if gofis rc false
-     then let d0 = delmin rc in
-          (match d0 with
-           | NoMin -> Deleted (lc, DSameK)
-           | MinDeleted (min, dr) ->
-             let (t0, d1) = dr in
-             (match d1 with
-              | DSameK -> Deleted ((Node (ug, lc, min, t0)), DSameK)
-              | DLowerK ->
-                if isMissing lc
-                then Deleted ((Node (true, Missing, min, (setgap t0 false))), DLowerK)
-                else Deleted ((Node (ug, lc, min, t0)), DSameK)))
-     else let d0 = delmax lc in
-          (match d0 with
-           | NoMax -> Deleted ((setgap rc true), DLowerK)
-           | MaxDeleted (max, dr) ->
-             let (t0, d1) = dr in
-             (match d1 with
-              | DSameK -> Deleted ((Node (ug, t0, max, rc)), DSameK)
-              | DLowerK -> Deleted ((Node (true, (setgap t0 (getgap lc)), max, (setgap rc false))), DLowerK)))
+     if isMissing lw
+     then Deleted (DLowerK, (setgap rw true))
+     else if isMissing rw
+          then Deleted (DLowerK, (setgap lw true))
+          else if getgap lw
+               then let (min, dp) = delmin rw in
+                    let (dh, ow) = dp in
+                    (match dh with
+                     | DSameK -> Deleted (DSameK, (Node (g0, min, lw, ow)))
+                     | DLowerK -> Deleted (DLowerK, (Node (true, min, (setgap lw false), (setgap ow (getgap rw))))))
+               else let (max, dp) = delmax lw in let (_, ow) = dp in Deleted (DSameK, (Node (g0, max, ow, rw)))
    | CompLtT ->
-     (match delete x lc with
-      | Deleted dr ->
-        let (t0, d0) = dr in
-        (match d0 with
-         | DSameK -> Deleted ((Node (ug, t0, d, rc)), DSameK)
+     (match delete x lw with
+      | Deleted dp ->
+        let (dh, ow) = dp in
+        (match dh with
+         | DSameK -> Deleted (DSameK, (Node (g0, d, ow, rw)))
          | DLowerK ->
-           if getgap lc
-           then if getgap rc
-                then Deleted ((Node (true, t0, d, (setgap rc false))), DLowerK)
-                else (match tryLowering rc with
-                      | TLtooLow -> Deleted (drot1 t0 d rc ug)
-                      | TLlowered t' -> Deleted ((Node (true, t0, d, t')), DLowerK))
-           else if isMissing rc
-                then Deleted ((Node (true, (setgap t0 false), d, Missing)), DLowerK)
-                else Deleted ((Node (ug, t0, d, rc)), DSameK))
+           if getgap lw
+           then if getgap rw
+                then Deleted (DLowerK, (Node (true, d, ow, (setgap rw false))))
+                else (match tryLowering rw with
+                      | TLlowered ow0 -> Deleted (DLowerK, (Node (true, d, ow, ow0)))
+                      | TLtooLow -> Deleted (drot1 ow d rw g0))
+           else if isMissing rw
+                then Deleted (DLowerK, (Node (true, d, (setgap ow false), Missing)))
+                else Deleted (DSameK, (Node (g0, d, ow, rw))))
       | DNotFound -> DNotFound)
    | CompGtT ->
-     (match delete x rc with
-      | Deleted dr ->
-        let (t0, d0) = dr in
-        (match d0 with
-         | DSameK -> Deleted ((Node (ug, lc, d, t0)), DSameK)
+     (match delete x rw with
+      | Deleted dp ->
+        let (dh, ow) = dp in
+        (match dh with
+         | DSameK -> Deleted (DSameK, (Node (g0, d, lw, ow)))
          | DLowerK ->
-           if getgap rc
-           then if getgap lc
-                then Deleted ((Node (true, (setgap lc false), d, t0)), DLowerK)
-                else (match tryLowering lc with
-                      | TLtooLow -> Deleted (drot2 lc d t0 ug)
-                      | TLlowered t' -> Deleted ((Node (true, t', d, t0)), DLowerK))
-           else if isMissing lc
-                then Deleted ((Node (true, Missing, d, (setgap t0 false))), DLowerK)
-                else Deleted ((Node (ug, lc, d, t0)), DSameK))
+           if getgap rw
+           then if getgap lw
+                then Deleted (DLowerK, (Node (true, d, (setgap lw false), ow)))
+                else (match tryLowering lw with
+                      | TLlowered ow0 -> Deleted (DLowerK, (Node (true, d, ow0, ow)))
+                      | TLtooLow -> Deleted (drot2 lw d ow g0))
+           else if isMissing lw
+                then Deleted (DLowerK, (Node (true, d, Missing, (setgap ow false))))
+                else Deleted (DSameK, (Node (g0, d, lw, ow))))
       | DNotFound -> DNotFound))
+| Missing -> DNotFound

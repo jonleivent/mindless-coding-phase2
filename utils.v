@@ -51,11 +51,6 @@ Ltac minlines :=
           end)
   in f.
 
-Tactic Notation "onhyp'" uconstr(T) tactic3(tac) :=
-  multimatch goal with H : ?T' |- _ => unify T T'; tac H end.
-
-Tactic Notation "onhyp" open_constr(T) tactic3(tac) := onhyp' T tac.
-
 Ltac is_head_of head type :=
   lazymatch type with
   | head => idtac
@@ -68,6 +63,14 @@ Tactic Notation "onhead" constr(head) tactic3(tac) :=
 Ltac destr H := destruct H.
 Ltac induct H := induction H.
 Ltac invert H := inversion H.
+
+Ltac pick head :=
+  let rec f x H :=
+      lazymatch x with
+      | head => H
+      | ?y _ => f y H
+      end in
+  multimatch goal with H : ?T |- _ => f T H end.
 
 Ltac cleanup_tac := 
   tauto||congruence||(constructor;cleanup_tac).
@@ -116,29 +119,39 @@ Proof.
   reflexivity.
 Qed.
 
+Ltac lowereq :=
+  lazymatch goal with 
+    |- @eq ?T ?X ?Y => (*in case T is a higher-than necessary universe*)
+    let H := fresh in
+    assert (X = Y) as H; [|try rewrite H; reflexivity]
+  end.
+
 Ltac my_f_equal :=
   try simple_reflex;
+  lowereq;
   lazymatch goal with
   | |- ?f ?x = ?g ?x => apply (depfeq f g); my_f_equal
   | _ => try (apply feq; [my_f_equal|try simple_reflex])
   end.
 
-Tactic Notation "force" "exact" constr(H) :=
+Ltac equator H :=
   let tH:=type of H in
   lazymatch goal with
-    |- ?G => replace G with tH; [exact H|my_f_equal]
+    |- ?G => replace G with tH; [exact H|]
   end.
 
-Tactic Notation "force" "refine" uconstr(X) "by" tactic1(tac) :=
-  let H:=fresh in
-  lazymatch goal with
-    |- ?G =>
-    refine (let H:=X in _);
-    cycle -1;
-    [let tH:=type of H in
-     replace G with tH;
-     [exact H|clear H;my_f_equal;[tac..]]|..]
-  end.
+Tactic Notation "force" "exact" constr(H) :=
+  equator H; [my_f_equal|..].
+
+Tactic Notation "equate" uconstr(term) :=
+  let H := fresh in
+  simple refine (let H := term in _); cycle -1;
+  [equator H;clear H|..]; shelve_unifiable.
+
+Tactic Notation "force" "refine" uconstr(H) "by" tactic1(tac) :=
+  equate H; [my_f_equal; [tac..]|..].
+
+Tactic Notation "force" "refine" uconstr(X) := force refine X by idtac.
 
 Ltac reassumption :=
   multimatch goal with H:_ |- _ => exact H end.

@@ -25,10 +25,8 @@ type a (* AXIOM TO BE REALIZED *)
 val ordA : a ordered
 
 type wavltree =
+| Node of bool * a * wavltree * wavltree
 | Missing
-| Node of bool * wavltree * a * wavltree
-
-val isMissing : wavltree -> bool
 
 type findResult =
 | Found
@@ -40,11 +38,13 @@ val setgap : wavltree -> bool -> wavltree
 
 val getgap : wavltree -> bool
 
-val gofis : wavltree -> bool -> bool
+val isgap : wavltree -> bool -> bool
 
-val rot1 : wavltree -> a -> wavltree -> bool -> wavltree
+val isMissing : wavltree -> bool
 
-val rot2 : wavltree -> a -> wavltree -> bool -> wavltree
+val irot1 : wavltree -> a -> wavltree -> bool -> wavltree
+
+val irot2 : wavltree -> a -> wavltree -> bool -> wavltree
 
 type insertedHow =
 | ISameK
@@ -52,14 +52,14 @@ type insertedHow =
 | IHigherK
 
 type insertResult =
-| FoundByInsert
 | Inserted of wavltree * insertedHow
+| FoundByInsert
 
 val insert : a -> wavltree -> insertResult
 
 type tryLoweringResult =
-| TLtooLow
 | TLlowered of wavltree
+| TLtooLow
 
 val tryLowering : wavltree -> tryLoweringResult
 
@@ -71,17 +71,9 @@ val drot1 : wavltree -> a -> wavltree -> bool -> ( * )
 
 val drot2 : wavltree -> a -> wavltree -> bool -> ( * )
 
-type delminResult =
-| NoMin
-| MinDeleted of a * ( * )
+val delmin : wavltree -> ( * )
 
-val delmin : wavltree -> delminResult
-
-type delmaxResult =
-| NoMax
-| MaxDeleted of a * ( * )
-
-val delmax : wavltree -> delmaxResult
+val delmax : wavltree -> ( * )
 
 type deleteResult =
 | Deleted of ( * )

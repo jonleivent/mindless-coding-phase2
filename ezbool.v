@@ -31,7 +31,7 @@ Require Import posall.
 Require Import factorevars.
 Require Import hypiter.
 
-Notation EZ := ##Z.
+Notation EZ := ##Z (only parsing).
 
 Open Scope Z_scope.
 
@@ -49,25 +49,29 @@ Arguments ezopp !x.
 Definition ezmul(x y : EZ) := (lift2 Z.mul) x y.
 Arguments ezmul !x !y.
 
-Notation "x #+ y" := (ezadd x y)
-                       (at level 50, left associativity).
-Notation "x #- y" := (ezsub x y)
-                       (at level 50, left associativity).
-Notation "#- x" := (ezopp x)
-                     (at level 35, right associativity).
-Notation "x #* y" := (ezmul x y)
-                       (at level 40, left associativity).
+Notation "x + y" := (ezadd x y) : E_scope.
+Notation "x - y" := (ezsub x y) : E_scope.
+Notation "- x" := (ezopp x) : E_scope.
+Notation "x * y" := (ezmul x y) : E_scope.
+
+Notation "x < y" := ((liftP2 Z.lt) x y) : E_scope.
+Notation "x > y" := ((liftP2 Z.gt) x y) : E_scope.
+Notation "x <= y" := ((liftP2 Z.le) x y) : E_scope.
+Notation "x >= y" := ((liftP2 Z.ge) x y) : E_scope.
 
 Opaque Z.mul.
 
-Notation EB := ##bool.
+Notation EB := ##bool (only parsing).
 
 Definition Enegb := lift1 negb.
 
 Definition b2Z(b : bool) : Z := if b then 1 else 0.
 Definition Eb2Z := lift1 b2Z.
 
-Lemma b2Zbounds : forall b, b2Z b >= 0 /\ b2Z b <= 1.
+Notation "^ b" := (b2Z b) (at level 30, format "^ b") : Z_scope.
+Notation "^ b" := (Eb2Z b) (at level 30, format "^ b") : E_scope.
+
+Lemma b2Zbounds : forall b, ^b >= 0 /\ ^b <= 1.
 Proof.
   dintros.
   destruct b; cbn; omega.
@@ -141,7 +145,7 @@ Section EB_Rewrites.
 End EB_Rewrites.
 
 Hint Rewrite
-     Enegbf_rw Enegbtr_rw Edubnegb_rw
+     Enegbf_rw Enegbt_rw Edubnegb_rw
   : EB_term_rws simp_rws term_rws.
 
 Hint Rewrite
@@ -154,13 +158,13 @@ Section EZ_Desharping_Rewrites.
   Variable b : bool.
 
   Tactic Notation "!!" := cbn; reflexivity.
-
-  Lemma eadd_desharp_rw : (#n #+ #m) = #(n + m). Proof. !!. Qed.
-  Lemma esub_desharp_rw : (#n #- #m) = #(n - m). Proof. !!. Qed.
-  Lemma emul_desharp_rw : (#n #* #m) = #(n * m). Proof. !!. Qed.
-  Lemma eopp_desharp_rw : #- #n = #(- n). Proof. !!. Qed.
+  Open Scope E_scope.
+  Lemma eadd_desharp_rw : (#n + #m) = #(n + m)%Z. Proof. !!. Qed.
+  Lemma esub_desharp_rw : (#n - #m) = #(n - m)%Z. Proof. !!. Qed.
+  Lemma emul_desharp_rw : (#n * #m) = #(n * m)%Z. Proof. !!. Qed.
+  Lemma eopp_desharp_rw : - #n = #(- n)%Z. Proof. !!. Qed.
   Lemma Enegb_desharp_rw : Enegb #b = #(negb b). Proof. !!. Qed.
-  Lemma Eb2Z_desharp_rw : Eb2Z #b = #(b2Z b). Proof. !!. Qed.
+  Lemma Eb2Z_desharp_rw : ^#b = #(^b)%Z. Proof. !!. Qed.
 
 End EZ_Desharping_Rewrites.
 
@@ -181,20 +185,20 @@ Section B2Z_Rewrites.
     repeat destruct_goal_bool; cbn; intuition congruence.
 
   (*b2Z term rewrites*)
-  Lemma b2Zt_rw : b2Z true = 1. Proof. !!. Qed.
-  Lemma b2Zf_rw : b2Z false = 0. Proof. !!. Qed.
-  Lemma b2Z_negb_rw : b2Z (negb b) = 1 - b2Z b. Proof. !!. Qed.
+  Lemma b2Zt_rw : ^true = 1. Proof. !!. Qed.
+  Lemma b2Zf_rw : ^false = 0. Proof. !!. Qed.
+  Lemma b2Z_negb_rw : ^(negb b) = 1 - ^b. Proof. !!. Qed.
 
   (*b2Z equality rewrites*)
-  Lemma b2Z_inj_rw : b2Z b1 = b2Z b2 <-> b1 = b2. Proof. !!. Qed.
-  Lemma b2Zeq1l_rw : b2Z b = 1 <-> b = true. Proof. !!. Qed.
-  Lemma b2Zeq1r_rw : 1 = b2Z b <-> b = true. Proof. !!. Qed.
-  Lemma b2Zeq0l_rw : b2Z b = 0 <-> b = false. Proof. !!. Qed.
-  Lemma b2Zeq0r_rw : 0 = b2Z b <-> b = false. Proof. !!. Qed.
-  Lemma b2Zeq1mb2Z_rw : b2Z b1 = 1 - b2Z b2 <-> b1 = negb b2. Proof. !!. Qed.
-  Lemma b2Zeq1mb2Zs_rw : 1 - b2Z b2 = b2Z b1 <-> b1 = negb b2. Proof. !!. Qed.
-  Lemma b2Zeqnb2Zp1_rw : b2Z b1 = - b2Z b2 + 1 <-> b1 = negb b2. Proof. !!. Qed.
-  Lemma b2Zeqnb2Zp1s_rw : - b2Z b2 + 1 = b2Z b1 <-> b1 = negb b2. Proof. !!. Qed.
+  Lemma b2Z_inj_rw : ^b1 = ^b2 <-> b1 = b2. Proof. !!. Qed.
+  Lemma b2Zeq1l_rw : ^b = 1 <-> b = true. Proof. !!. Qed.
+  Lemma b2Zeq1r_rw : 1 = ^b <-> b = true. Proof. !!. Qed.
+  Lemma b2Zeq0l_rw : ^b = 0 <-> b = false. Proof. !!. Qed.
+  Lemma b2Zeq0r_rw : 0 = ^b <-> b = false. Proof. !!. Qed.
+  Lemma b2Zeq1mb2Z_rw : ^b1 = 1 - ^b2 <-> b1 = negb b2. Proof. !!. Qed.
+  Lemma b2Zeq1mb2Zs_rw : 1 - ^b2 = ^b1 <-> b1 = negb b2. Proof. !!. Qed.
+  Lemma b2Zeqnb2Zp1_rw : ^b1 = - ^b2 + 1 <-> b1 = negb b2. Proof. !!. Qed.
+  Lemma b2Zeqnb2Zp1s_rw : - ^b2 + 1 = ^b1 <-> b1 = negb b2. Proof. !!. Qed.
 
 End B2Z_Rewrites.
 
@@ -214,24 +218,24 @@ Section Eb2Z_Rewrites.
 
   Tactic Notation "!!" :=
     unerase; autorewrite with b2Z_term_rws b2Z_eq_rws; tauto.
-
+  Open Scope E_scope.
   (*Eb2Z term rewrites*)
-  Lemma Eb2Zt_rw : Eb2Z #true = #1. Proof. !!. Qed.
-  Lemma Eb2Zf_rw : Eb2Z #false = #0. Proof. !!. Qed.
-  Lemma Eb2Z_negb_rw : Eb2Z (Enegb b) = #1 #- Eb2Z b. Proof. !!. Qed.
+  Lemma Eb2Zt_rw : ^#true = #1. Proof. !!. Qed.
+  Lemma Eb2Zf_rw : ^#false = #0. Proof. !!. Qed.
+  Lemma Eb2Z_negb_rw : ^(Enegb b) = #1 - ^b. Proof. !!. Qed.
 
   (*Eb2Z equality rewrites*)
-  Lemma Eb2Z_inj_rw : Eb2Z b1 = Eb2Z b2 <-> b1 = b2. Proof. !!. Qed.
-  Lemma Eb2Zeq1l_rw : Eb2Z b = #1 <-> b = #true. Proof. !!. Qed.
-  Lemma Eb2Zeq1r_rw : #1 = Eb2Z b <-> b = #true. Proof. !!. Qed.
-  Lemma Eb2Zeq0l_rw : Eb2Z b = #0 <-> b = #false. Proof. !!. Qed.
-  Lemma Eb2Zeq0r_rw : #0 = Eb2Z b <-> b = #false. Proof. !!. Qed.
-  Lemma Eb2Zeq1mb2Z_rw : Eb2Z b1 = #1 #- Eb2Z b2 <-> b1 = Enegb b2. Proof. !!. Qed.
-  Lemma Eb2Zeq1mb2Zs_rw : #1 #- Eb2Z b2 = Eb2Z b1 <-> b1 = Enegb b2. Proof. !!. Qed.
+  Lemma Eb2Z_inj_rw : ^b1 = ^b2 <-> b1 = b2. Proof. !!. Qed.
+  Lemma Eb2Zeq1l_rw : ^b = #1 <-> b = #true. Proof. !!. Qed.
+  Lemma Eb2Zeq1r_rw : #1 = ^b <-> b = #true. Proof. !!. Qed.
+  Lemma Eb2Zeq0l_rw : ^b = #0 <-> b = #false. Proof. !!. Qed.
+  Lemma Eb2Zeq0r_rw : #0 = ^b <-> b = #false. Proof. !!. Qed.
+  Lemma Eb2Zeq1mb2Z_rw : ^b1 = #1 - ^b2 <-> b1 = Enegb b2. Proof. !!. Qed.
+  Lemma Eb2Zeq1mb2Zs_rw : #1 - ^b2 = ^b1 <-> b1 = Enegb b2. Proof. !!. Qed.
   Lemma Eb2Zeqnb2Zp1_rw :
-    Eb2Z b1 = #- Eb2Z b2 #+ #1 <-> b1 = Enegb b2. Proof. !!. Qed.
+    ^b1 = - ^b2 + #1 <-> b1 = Enegb b2. Proof. !!. Qed.
   Lemma Eb2Zeqnb2Zp1s_rw :
-    #- Eb2Z b2 #+ #1 = Eb2Z b1 <-> b1 = Enegb b2. Proof. !!. Qed.
+    - ^b2 + #1 = ^b1 <-> b1 = Enegb b2. Proof. !!. Qed.
 
 End Eb2Z_Rewrites.
 
@@ -267,16 +271,16 @@ Section EZ_LHSify_Rewrites.
   Variables x y z : EZ.
 
   Tactic Notation "!!" := unerase; omega.
+  Open Scope E_scope.
+  Lemma Ezlhs_rw : x = y <-> x - y = #0. Proof. !!. Qed.
+  Lemma Ezadd1_lhs_rw : x + y = z <-> x = z - y. Proof. !!. Qed.
+  Lemma Ezadd2_lhs_rw : x + y = z <-> y = z - x. Proof. !!. Qed.
+  Lemma Ezsub1_lhs_rw : x - y = z <-> x = z + y. Proof. !!. Qed.
+  Lemma Ezsub2_lhs_rw : x - y = z <-> y = x - z. Proof. !!. Qed.
+  Lemma Ezopp_lhs_rw : - x = y <-> x = - y. Proof. !!. Qed.
 
-  Lemma Ezlhs_rw : x = y <-> x #- y = #0. Proof. !!. Qed.
-  Lemma Ezadd1_lhs_rw : x #+ y = z <-> x = z #- y. Proof. !!. Qed.
-  Lemma Ezadd2_lhs_rw : x #+ y = z <-> y = z #- x. Proof. !!. Qed.
-  Lemma Ezsub1_lhs_rw : x #- y = z <-> x = z #+ y. Proof. !!. Qed.
-  Lemma Ezsub2_lhs_rw : x #- y = z <-> y = x #- z. Proof. !!. Qed.
-  Lemma Ezopp_lhs_rw : #- x = y <-> x = #- y. Proof. !!. Qed.
-
-  Lemma Eziso1_rw : y = #0 <-> x = x #+ y. Proof. !!. Qed.
-  Lemma Eziso2_rw : y = #0 <-> x = x #- y. Proof. !!. Qed.
+  Lemma Eziso1_rw : y = #0 <-> x = x + y. Proof. !!. Qed.
+  Lemma Eziso2_rw : y = #0 <-> x = x - y. Proof. !!. Qed.
 
 End EZ_LHSify_Rewrites.
 
@@ -302,6 +306,7 @@ Ltac EZring_postprocess :=
 
 Add Ring ezring : 
   ezring_theory (abstract,
+                 (*cannot be decidable, because no equality function is: EZ -> EZ -> bool*)
                  constants [ezconst],
                  preprocess [EZring_preprocess],
                  postprocess [EZring_postprocess]
@@ -361,12 +366,12 @@ Hint Rewrite <- b2Z_inj_rw : bang_rws.
 
 Ltac bang_setup_tactic := idtac. (*to be redefined*)
 
-Ltac bang :=
+Ltac bang_internal setup :=
   dintros;
   unsetall;
   try tauto;
   first[check_in_prop|exfalso];
-  bang_setup_tactic;
+  setup;
   unerase;
   autorewrite with bang_rws in *;
   posall b2Zbounds;
@@ -375,6 +380,9 @@ Ltac bang :=
    | |- _ /\ _ => deconj; first[congruence|omega]
    | _ => congruence
    end).
+
+Ltac bang := bang_internal bang_setup_tactic.
+Ltac bang0 := bang_internal idtac.
 
 Ltac clear_evars :=
   (*assumes all evars are factored*)

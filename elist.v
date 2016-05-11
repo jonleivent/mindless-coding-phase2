@@ -25,29 +25,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Require Export sorted.
 Require Export solvesorted.
-Export ListNotations.
 Require Export erasable.
 Export ErasableNotation.
 Require Import utils.
 
+Notation " [ ] " := nil (format "[ ]") : list_scope.
+Notation " [ x ] " := (cons x nil) : list_scope.
+
 Global Opaque NotIn.
-
-Lemma Erasable_exists_rw :
-  forall (T : Set) (x : T) (P : T -> Prop),
-    (exists (y : T), #y = #x /\ P y) <-> P x.
-Proof.
-  intros.
-  split.
-  - intros [y (e & H)].
-    unerase.
-    subst.
-    assumption.
-  - intro H.
-    exists x.
-    tauto.
-Qed.
-
-Hint Rewrite Erasable_exists_rw : unerase_rws.
 
 Section defs.
   Context {A : Set}.
@@ -62,7 +47,7 @@ Section defs.
   Lemma Esorted_rw : 
     forall (x : list A), Esorted #x <-> sorted x.
   Proof.
-    cbv [Esorted liftP1].
+    unfold Esorted.
     unerase.
     tauto.
   Qed.
@@ -70,7 +55,7 @@ Section defs.
   Lemma ENotIn_rw :
     forall (a : A)(x : list A), ENotIn a #x <-> NotIn a x.
   Proof.
-    cbv [ENotIn liftP1].
+    unfold ENotIn.
     unerase.
     tauto.
   Qed.
@@ -78,11 +63,14 @@ Section defs.
   Lemma Eapp_rw :
     forall (x y : list A), (Eapp #x #y) = #(app x y).
   Proof.
-    cbn.
+    unfold Eapp.
+    unerase.
     tauto.
   Qed.
 
 End defs.
+
+Global Opaque Eapp ENotIn.
 
 Hint Rewrite @Esorted_rw @ENotIn_rw @Eapp_rw : unerase_rws.
 
@@ -114,41 +102,40 @@ Hint Rewrite @red_app @lnenilrw : bang_rws.
 
 (* Some nice syntax for erasable lists.  Note the use of ^x instead
   of [x] - because for some reason [x] wouldn't work in all cases. *)
-Infix "++" := Eapp (right associativity, at level 60) : EL_scope.
-Notation " [ ] " := (# nil) : EL_scope.
-Notation "^ x" := (# (cons x nil)) (at level 59) : EL_scope.
-Delimit Scope EL_scope with eln.
-Bind Scope EL_scope with Erasable.
+Infix "++" := Eapp (right associativity, at level 60) : E_scope.
+Notation " [ ] " := (# nil) : E_scope.
+Notation " [ x ] " := (# (cons x nil)) : E_scope.
+Bind Scope E_scope with Erasable.
 Bind Scope list_scope with list.
-Open Scope EL_scope.
+Open Scope E_scope.
 
 Section EL_lemmas.
   Context {A : Set}.
 
   Notation EL := (## (list A)).
 
-  Lemma Eapp_assoc: forall {p q r : EL}, (p++q)++r=p++(q++r).
-  Proof.
+  Lemma Eapp_assoc: forall {p q r : EL}, (p++q)++r = p++(q++r).
+  Proof. 
     intros.
     unerase.
     rewrite <- app_assoc.
     reflexivity.
   Qed.
 
-  Lemma group3Eapp: forall (p q r s : EL), p++q++r++s=(p++q++r)++s.
+  Lemma group3Eapp: forall (p q r s : EL), p++q++r++s = (p++q++r)++s.
   Proof.
     intros.
     rewrite ?Eapp_assoc.
     reflexivity.
   Qed.
 
-  Lemma Eapp_nil_l : forall (l : EL), []++l=l.
+  Lemma Eapp_nil_l : forall (l : EL), []++l = l.
   Proof.
     unerase.
     reflexivity.
   Qed.
   
-  Lemma Eapp_nil_r : forall (l : EL), l++[]=l.
+  Lemma Eapp_nil_r : forall (l : EL), l++[] = l.
   Proof.
     unerase.
     intros.
@@ -156,13 +143,13 @@ Section EL_lemmas.
     reflexivity.
   Qed.
 
-  Lemma fnenil1 : forall (d : A), ^d <> [].
+  Lemma fnenil1 : forall (d : A), [d] <> [].
   Proof.
     unerase.
     discriminate.
   Qed.
 
-  Lemma fnenil2 : forall (d : A)(rf : EL), ^d++rf <> [].
+  Lemma fnenil2 : forall (d : A)(rf : EL), [d]++rf <> [].
   Proof.
     unerase.
     intro H.
@@ -170,7 +157,7 @@ Section EL_lemmas.
     intuition discriminate.
   Qed.
 
-  Lemma fnenilright : forall (lf rf : EL), rf<>[] -> lf++rf<>[].
+  Lemma fnenilright : forall (lf rf : EL), rf <> [] -> lf++rf <> [].
   Proof.
     unerase.
     intro H'.
@@ -178,7 +165,7 @@ Section EL_lemmas.
     intuition discriminate.
   Qed.
 
-  Lemma fnenilrw : forall (d : A)(lf rf : EL), lf++^d++rf = [] <-> False.
+  Lemma fnenilrw : forall (d : A)(lf rf : EL), lf++[d]++rf = [] <-> False.
   Proof.
     dintros.
     unerase.
@@ -226,7 +213,7 @@ Ltac rootify d :=
   (lazymatch goal with
       |- context [?X ++ ?Y] =>
       lazymatch constr:(X ++ Y) with
-        _ ++ ^ d ++ _ => idtac
+        _ ++ [d] ++ _ => idtac
       end
     end).
 

@@ -26,6 +26,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 Require Import hypiter.
 Require Import factorevars.
 
+Global Set Injection On Proofs.
+
 Inductive Erasable(A : Set) : Prop :=
   erasable: A -> Erasable A.
 
@@ -60,38 +62,41 @@ Qed.
 
 Hint Rewrite Erasable_rw : unerase_rws.
 
+Create HintDb unerase_unfolds.
+
 Ltac unerase_hyps :=
   let f H :=
       try
-      (autorewrite with unerase_rws in H;
-        tryif has_value H
-        then
-          let V:=get_value H in
-          let R:=fresh in
-          let E:=fresh in
-          remember V as R eqn:E;
-          autorewrite with unerase_rws in E;
-          lazymatch type of H with
-          | ## _ =>
-            destruct R as [R];
-            rewrite Erasable_rw in E;
-            let H':=fresh in
-            set (H':=R) in H;
-            unfold H in *;
-            clear H;
-            rename H' into H
-          | _ => idtac
-          end;
-          subst R
-        else
-          lazymatch type of H with
-          | ## _ =>
-            let H':=fresh H in
-            destruct H as [H'];
-            clear H;
-            rename H' into H
-          | _ => idtac
-          end) in
+        (autounfold with unerase_unfolds in H;
+         autorewrite with unerase_rws in H;
+         tryif has_value H
+         then
+           let V:=get_value H in
+           let R:=fresh in
+           let E:=fresh in
+           remember V as R eqn:E;
+           autorewrite with unerase_rws in E;
+           lazymatch type of H with
+           | ## _ =>
+             destruct R as [R];
+             rewrite Erasable_rw in E;
+             let H':=fresh in
+             set (H':=R) in H;
+             unfold H in *;
+             clear H;
+             rename H' into H
+           | _ => idtac
+           end;
+           subst R
+         else
+           lazymatch type of H with
+           | ## _ =>
+             let H':=fresh H in
+             destruct H as [H'];
+             clear H;
+             rename H' into H
+           | _ => idtac
+           end) in
   hyps => rloop f.
 
 Ltac check_in_prop :=
@@ -103,15 +108,45 @@ Ltac check_in_prop :=
   end.
 
 Ltac unerase_internal :=
-   unerase_hyps;
-   autorewrite with unerase_rws;
-   try apply erasable.
+  autounfold with unerase_unfolds;
+  unerase_hyps;
+  autorewrite with unerase_rws;
+  try apply erasable.
 
 Ltac unerase :=
   intros;
   tryif check_in_prop
   then unerase_internal
   else rewrite ?Erasable_rw in *.
+
+Local Ltac solve_erasable_exists :=
+  intros T x P;
+  split;
+  [ intros (? & ? & ?);
+    unerase;
+    subst;
+    assumption
+  | intro H;
+    exists x;
+    tauto].
+
+Lemma Erasable_exists_rw1 :
+  forall (T : Set) (x : T) (P : T -> Prop), (exists (y : T), #y = #x /\ P y) <-> P x.
+Proof. solve_erasable_exists. Qed.
+
+Lemma Erasable_exists_rw2 :
+  forall (T : Set) (x : T) (P : T -> Prop), (exists (y : T), #x = #y /\ P y) <-> P x.
+Proof. solve_erasable_exists. Qed.
+
+Lemma Erasable_exists_rw3 :
+  forall (T : Set) (x : T) (P : T -> Prop), (exists (y : T), P y /\ #y = #x) <-> P x.
+Proof. solve_erasable_exists. Qed.
+
+Lemma Erasable_exists_rw4 :
+  forall (T : Set) (x : T) (P : T -> Prop), (exists (y : T), P y /\ #x = #y) <-> P x.
+Proof. solve_erasable_exists. Qed.
+
+Hint Rewrite Erasable_exists_rw1 Erasable_exists_rw2 Erasable_exists_rw3 Erasable_exists_rw4 : unerase_rws.
 
 (* Erasable+Prop is a monad, and appE is application within that monad
 of lifted functions.  But, the result would then need the "f $ x $ y"
@@ -122,7 +157,7 @@ Proof.
   exact (f x).
 Defined.
 
-(*Infix "$" := appE (left associativity, at level 98) : ELN_scope.*)
+(*Infix "$" := appE (left associativity, at level 98) : E_scope.*)
 
 (* ... So, instead of lifting functions with # alone, we use lifters
 that leave the normal application syntax intact.  This means we need
@@ -148,3 +183,5 @@ Definition liftP1{A : Set}(p : A -> Prop)(ea : ##A) : Prop :=
 
 Definition liftP2{A B : Set}(p : A -> B -> Prop)(ea : ##A)(eb : ##B) : Prop :=
   exists (a : A), #a=ea /\ exists (b : B), #b=eb /\ p a b.
+
+Hint Unfold lift1 lift2 liftP1 liftP2 : unerase_unfolds.

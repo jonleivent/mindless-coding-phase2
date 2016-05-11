@@ -6,3 +6,4 @@ make clean
 make
 time coqtop -m -time -batch -R . mindless -impredicative-set -l wavl.v
 time coqtop -m -time -batch -R . mindless -impredicative-set -l wavl-noninter.v
+time coqtop -m -time -batch -R . mindless -impredicative-set -l wavl-noauto.v
