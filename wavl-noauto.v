@@ -29,31 +29,9 @@ See "Rank-Balanced Trees" by Haeupler, Sen, Tarjan
 [http://www.cs.princeton.edu/~sssix/papers/rb-trees-talg.pdf].
 *)
 
-(*! Coq proof style:
-
-  - Define all but most trivial functions using proof mode.
-
-  - Keep all but the most trivial functions opaque (via Qed), as their types
-    should suffice for all usages, making unfolding unnecessary (unfolding is
-    unmodular).
-
-  - Do not depend on any non-argument hypotheses names.
-
-  - Do not depend on hypothesis order.
-
-  - Do not use intro patterns.
-
-  - Target tactics to hyps based on their type and relationship to arguments,
-    using projector-like tactic/notations for readability.
-
-  - Do not use type indexes - use type parameters and equality fields instead.
-
-  - Tailor simple solver tactics for each function definition.
-
-  - Use brief tactic notations and proof bullets to improve proof structure
-    readability.
-
- *)
+(* A non-automated (actually, semi-automated) version of wavl.v, with no
+tailored specific solver tactics.  Note that the general "boom" and "ss"
+automation tactics are still used throughout. *)
 
 Require Import elist.
 Require Import ezbool.

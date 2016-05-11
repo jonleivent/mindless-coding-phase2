@@ -22,6 +22,13 @@ SOFTWARE.
 
  ***********************************************************************)
 
+(*** Weak AVL Trees ***)
+
+(*+ 
+See "Rank-Balanced Trees" by Haeupler, Sen, Tarjan
+[http://www.cs.princeton.edu/~sssix/papers/rb-trees-talg.pdf].
+*)
+
 (* A non-interactive version of wavl.v, with all functions defined using ":=".
 Note that the leaves of all but the most trivial functions are still filled in
 using proof search. *)
