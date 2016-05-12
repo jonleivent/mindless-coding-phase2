@@ -99,8 +99,7 @@ Ltac bang_setup_tactic ::=
   let f H :=
       (lazymatch type of H with
        | wavltree _ _ _ _ _ =>
-         first [apply missing_contents in H
-               |apply missing_rank in H
+         first [apply missing_rank in H
                |apply wavl_node_min_rank in H; [|assumption||fnenil]
                |apply wavl_min_rank in H]
        | _ => idtac
@@ -112,6 +111,28 @@ Ltac ss_setup_tactic :=
   hyps => loop f.
 
 Ltac ss := ss_setup_tactic; unerase; solve[solve_sorted].
+
+(**********************************************************************)
+
+Section Check_Leaf_Rule.
+  
+  Local Definition is_leaf`(w : wavltree k g lg rg c) : bool :=
+    match w with
+    | Node _ _ _ _ _ _ _ _ (Missing _ _ _ _) _ _ (Missing _ _ _ _) _ _ => true
+    | _ => false
+    end.
+
+  Ltac destruct_match :=
+    match goal with |- context[match ?X with _ => _ end] => destruct X end.
+
+  Local Lemma leaf_rule_works`(w : wavltree k g lg rg c) : k = #0 <-> is_leaf w = true.
+  Proof.
+    unfold is_leaf.
+    repeat destruct_match.
+    all: !.
+  Qed.
+
+End Check_Leaf_Rule.
 
 (**********************************************************************)
 
@@ -220,7 +241,7 @@ Section Insert_Rotations.
   Notation "* b" := (Bool.Sumbool.sumbool_of_bool ($ b)) (at level 10, only parsing).
   
   Definition irot1`(lw : wavltree k #false llg lrg lc)(x : A)`(rw : wavltree (k - #2) #true rlg rrg rc)
-    : llg <> lrg -> Esorted (lc++[x]++rc) -> forall g, wavltree k #g #false #false (lc++[x]++rc) :=
+    : llg = Enegb lrg -> Esorted (lc++[x]++rc) -> forall g, wavltree k #g #false #false (lc++[x]++rc) :=
     match lw with
     | Node _ _ _ _ _ _ _ _ llw _ _ lrw _ _ =>
       if lrw then (if *lrg then !! else !!) else !!
@@ -228,7 +249,7 @@ Section Insert_Rotations.
     end.
   
   Definition irot2`(lw : wavltree (k - #2) #true llg lrg lc)(x : A)`(rw : wavltree k #false rlg rrg rc)
-    : rlg <> rrg -> Esorted (lc++[x]++rc) -> forall g, wavltree k #g #false #false (lc++[x]++rc) :=
+    : Enegb rlg = rrg -> Esorted (lc++[x]++rc) -> forall g, wavltree k #g #false #false (lc++[x]++rc) :=
     match rw with
     | Node _ _ _ _ _ _ _ _ rlw _ _ rrw _ _ =>
       if rlw then (if *rlg then !! else !!) else !!
@@ -290,7 +311,8 @@ Section Insert.
      (eapply Inserted;
       [reflexivity || eapply nilnilnil
       |solve_wavl2
-      |econstructor;[boom..]])).
+      |econstructor;[boom..]
+    ])).
 
   Notation "!!" := ltac:(solve_insert) (only parsing).
 
@@ -360,7 +382,8 @@ Ltac solve_delpair :=
   dintros;
   eapply Delout;
   [constructor; [boom..]
-  |solve_wavl].
+  |solve_wavl
+  ].
 
 Section Delete_Rotations.
 
@@ -501,8 +524,6 @@ Section Delete.
     end.
 
 End Delete.
-
-(* End Wavltree. *)
 
 Set Printing Width 120.
 

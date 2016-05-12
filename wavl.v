@@ -250,7 +250,7 @@ Section Lemmas.
   Proof. ?? w; !. Qed.
 
   (*Two lemmas that are used to project the field equalities from Missings: *)
-  Lemma missing_contents`(w : wavltree k g lg rg c) : k = - #1 -> c = [].
+  Lemma missing_contents`(w : wavltree (- #1) g lg rg c) : c = [].
   Proof.
     pose proof (wavl_node_min_rank w).
     ?? w; !.
@@ -286,7 +286,6 @@ Ltac bang_setup_tactic ::=
          order doesn't matter) because wavl_min_rank always works, but
          produces the least specific info*)
          first [apply missing_rank in H
-               (*|apply missing_contents in H; [|bang0]*)
                |apply wavl_node_min_rank in H; [|assumption||fnenil]
                |apply wavl_min_rank in H]
        | _ => idtac
@@ -519,7 +518,7 @@ Section Insert_Rotations.
   Tactic Notation "!!" := [>solve_wavl..].
 
   Definition irot1`(lw : wavltree k #false llg lrg lc)(x : A)`(rw : wavltree (k - #2) #true rlg rrg rc)
-    : llg <> lrg -> Esorted(lc++[x]++rc) -> forall g, wavltree k #g #false #false (lc++[x]++rc).
+    : llg = Enegb lrg -> Esorted(lc++[x]++rc) -> forall g, wavltree k #g #false #false (lc++[x]++rc).
   Proof.
     ?? lw.
     - ?? (right_child lw).
@@ -529,7 +528,7 @@ Section Insert_Rotations.
   Qed.
 
   Definition irot2`(lw : wavltree (k - #2) #true llg lrg lc)(x : A)`(rw : wavltree k #false rlg rrg rc)
-    : rlg <> rrg -> Esorted(lc++[x]++rc) -> forall g, wavltree k #g #false #false (lc++[x]++rc).
+    : Enegb rlg = rrg -> Esorted(lc++[x]++rc) -> forall g, wavltree k #g #false #false (lc++[x]++rc).
   Proof.
     ?? rw.
     - ?? (left_child rw).

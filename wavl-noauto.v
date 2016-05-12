@@ -172,8 +172,7 @@ Ltac bang_setup_tactic ::=
   let f H :=
       (lazymatch type of H with
        | wavltree _ _ _ _ _ =>
-         first [apply missing_contents in H
-               |apply missing_rank in H
+         first [apply missing_rank in H
                |apply wavl_node_min_rank in H; [|assumption||fnenil]
                |apply wavl_min_rank in H]
        | _ => idtac
