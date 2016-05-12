@@ -129,7 +129,7 @@ Section Check_Leaf_Rule.
   Proof.
     unfold is_leaf.
     repeat destruct_match.
-    all: !.
+    all: boom.
   Qed.
 
 End Check_Leaf_Rule.
