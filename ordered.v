@@ -23,11 +23,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ***********************************************************************)
 
-Require Export EquivDec.
+Require Export RelationClasses.
 
 Class Ordered(A : Set) := 
   {
-    eq_dec :> EqDec A eq;
     lt : A -> A -> Prop;
     lt_strict :> StrictOrder lt;
     compare : A -> A -> comparison;

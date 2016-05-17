@@ -14,9 +14,7 @@ type 'a sig0 =
 
 
 
-type 'a eqDec = 'a -> 'a -> bool
-
-type 'a ordered = { eq_dec : 'a eqDec; compare : ('a -> 'a -> comparison); compare_spec : ('a -> 'a -> compareSpecT) }
+type 'a ordered = { compare : ('a -> 'a -> comparison); compare_spec : ('a -> 'a -> compareSpecT) }
 
 (** val compare_spec : 'a1 ordered -> 'a1 -> 'a1 -> compareSpecT **)
 
