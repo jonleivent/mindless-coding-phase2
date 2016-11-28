@@ -64,40 +64,48 @@ Hint Rewrite Erasable_rw : unerase_rws.
 
 Create HintDb unerase_unfolds.
 
+Ltac unerase_hyp H :=
+  autounfold with unerase_unfolds in H;
+  autorewrite with unerase_rws in H;
+  tryif has_value H
+  then
+    let V:=get_value H in
+    let R:=fresh in
+    let E:=fresh in
+    remember V as R eqn:E;
+    autorewrite with unerase_rws in E;
+    lazymatch type of H with
+    | ## _ =>
+      destruct R as [R];
+      rewrite Erasable_rw in E;
+      let H':=fresh in
+      set (H':=R) in H;
+      unfold H in *;
+      clear H;
+      rename H' into H
+    | _ => idtac
+    end;
+    subst R
+  else
+    lazymatch type of H with
+    | ## _ =>
+      let H':=fresh H in
+      destruct H as [H'];
+      clear H;
+      rename H' into H
+    | # _ = # _ => apply Erasable_inj in H as ?
+    | _ => idtac
+    end.
+
+Tactic Notation "unerase" ne_hyp_list(Hs) :=
+  let hs := harvest_hyps ltac:(generalize Hs) in
+  let f H := try unerase_hyp H in
+  rloop f hs.
+
 Ltac unerase_hyps :=
-  let f H :=
-      try
-        (autounfold with unerase_unfolds in H;
-         autorewrite with unerase_rws in H;
-         tryif has_value H
-         then
-           let V:=get_value H in
-           let R:=fresh in
-           let E:=fresh in
-           remember V as R eqn:E;
-           autorewrite with unerase_rws in E;
-           lazymatch type of H with
-           | ## _ =>
-             destruct R as [R];
-             rewrite Erasable_rw in E;
-             let H':=fresh in
-             set (H':=R) in H;
-             unfold H in *;
-             clear H;
-             rename H' into H
-           | _ => idtac
-           end;
-           subst R
-         else
-           lazymatch type of H with
-           | ## _ =>
-             let H':=fresh H in
-             destruct H as [H'];
-             clear H;
-             rename H' into H
-           | _ => idtac
-           end) in
-  hyps => rloop f.
+  let hs := all_hyps in
+  let f H := try unerase_hyp H in
+  rloop f hs.
 
 Ltac check_in_prop :=
   lazymatch goal with
@@ -113,7 +121,7 @@ Ltac unerase_internal :=
   autorewrite with unerase_rws;
   try apply erasable.
 
-Ltac unerase :=
+Tactic Notation "unerase" :=
   intros;
   tryif check_in_prop
   then unerase_internal
@@ -185,3 +193,51 @@ Definition liftP2{A B : Set}(p : A -> B -> Prop)(ea : ##A)(eb : ##B) : Prop :=
   exists (a : A), #a=ea /\ exists (b : B), #b=eb /\ p a b.
 
 Hint Unfold lift1 lift2 liftP1 liftP2 : unerase_unfolds.
+
+(*Lifting preserves well-foundedness - useful for well_founded_induction*)
+
+Require Import Init.Wf.
+
+Lemma Ewf : forall {A:Set}{R : A -> A -> Prop}, well_founded R -> well_founded (liftP2 R).
+Proof.
+  intros A R wfR. unfold well_founded. intro b. unerase b.
+  induction b as [b IHb] using (well_founded_induction wfR).
+  apply Acc_intro. intros a Rab. unerase a Rab. apply IHb with (1 := Rab).
+Qed.
+
+Lemma Ewfof : forall {A B:Set}{R : A -> A -> Prop}(f : B -> A),
+    well_founded R -> well_founded (fun x y => (liftP2 R) ((lift1 f) x) ((lift1 f) y)).
+Proof.
+  intros A B R f wfR. unfold well_founded. intro b. unerase b.
+  remember (f b) as fb eqn:E. revert b E.
+  induction fb as [fb IHb] using (well_founded_induction wfR). intros b ->.
+  apply Acc_intro. intros a Rfafb. unerase a Rfafb. apply IHb with (1 := Rfafb) (2 := eq_refl).
+Qed.
+
+(*Lifting preserves decidability*)
+
+Lemma Edec : forall {A:Set}, (forall (x y:A), {x = y} + {x <> y}) -> forall (x y:A), {#x = #y} + {#x <> #y}.
+Proof.
+  intros A H x y.
+  specialize (H x y).
+  destruct H.
+  - subst. tauto.
+  - right. unerase. assumption.
+Qed.
+
+Lemma EPdec : forall {A:Set}, (forall (x y:A), x = y \/ x <> y) -> forall (x y:##A), x = y \/ x <> y.
+Proof.
+  intros A H x y.
+  unerase.
+  apply H.
+Qed.
+
+Require Eqdep_dec.
+
+Lemma Eeq_proofs_unicity : forall {A:Set}, (forall x y:A, x = y \/ x <> y) -> forall (x y:##A) (p1 p2 : x = y), p1 = p2.
+Proof.
+  intros A H.
+  apply Eqdep_dec.eq_proofs_unicity.
+  apply EPdec.
+  exact H.
+Qed.

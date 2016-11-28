@@ -44,7 +44,7 @@ Tactic Notation "harvest" tactic3(harvester) "=>" tactic3(tac) :=
   tac hs.
 
 Ltac last_hyp :=
-  lazymatch goal with H : _ |- _ => constr:H end.
+  lazymatch goal with H : _ |- _ => H end.
 
 Ltac revert_clearbody H := try clearbody H; revert H.
 

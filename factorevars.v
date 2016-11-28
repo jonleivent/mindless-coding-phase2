@@ -63,12 +63,17 @@ Ltac factor_evars H :=
   factor_type_evars H.
 
 Ltac factor_conc_evars :=
-  lazymatch goal with |- ?G =>
-    let X:=fresh "E0" in
-    set (X:=G) in *;
-    factor_value_evars X;
-    unfold X in *; clear X
-  end.
+  repeat
+    match goal with
+      |- context[?E] =>
+      is_evar E;
+      let nE := fresh "E0" in
+      set (nE := E) in *
+    end.
+
+Ltac factor_hyp_evars :=
+  let Hs := all_hyps in
+  loop factor_evars Hs.
 
 Ltac factor_all_evars :=
   let Hs := all_hyps in
@@ -78,4 +83,9 @@ Ltac factor_all_evars :=
 Ltac defactor_all_evars :=
   let f H := let v:=get_value H in is_evar v in
   let s H := unfold H in *; clear H in
+  filter f ltac:(loop s) all_hyps.
+
+Ltac clearbody_evars :=
+  let f H := let v:=get_value H in is_evar v in
+  let s H := clearbody H in
   filter f ltac:(loop s) all_hyps.

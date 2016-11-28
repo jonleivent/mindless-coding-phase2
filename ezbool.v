@@ -331,7 +331,7 @@ Ltac rsimp_term T :=
 with rsimp_fun F A :=
   let T:=constr:(F A) in
   let tT:=type of T in
-  tryif first [constr_eq tT Z|constr_eq tT (EZ)]
+  tryif first [constr_eq tT Z|constr_eq tT (##Z)]
   then let e:=fresh in
        let ee:=fresh in
        remember T as e eqn:ee in *;
@@ -498,6 +498,15 @@ Ltac unify_EBeq E :=
   defactor_all_evars;
   reflexivity.
 
+Ltac unify_Zeq E :=
+  first[rewrite (Eziso1_rw #E);
+         ring_simplify; notin_conc_rhs E
+       |rewrite (Eziso2_rw #E);
+        ring_simplify; notin_conc_rhs E];
+  autorewrite with desharping_rws;
+  defactor_all_evars;
+  reflexivity.
+
 Ltac unify_EZeq E :=
   first[rewrite (Eziso1_rw E);
          ring_simplify; notin_conc_rhs E
@@ -517,13 +526,7 @@ Ltac boom_internal doinsts :=
   try simple_reflex;
   factor_all_evars;
   match goal with
-  | [E := ?V : Z |- (@eq EZ _ _)] =>
-    (*We should never see a Z equality - only EZs - because we don't call
-      unerase until bang, and no Zs appear without erasure as args of
-      funs/ctors.  If this changes, as it would if we were developing a
-      structure that, unlike wavltree, had Z args, then we will need to
-      revisit this. *)
-    is_evar V; fail 999 "solve_EBeq found a Z evar" V
+  | [E := ?V : Z |- (@eq EZ _ _)] => is_evar V; unify_Zeq E
   | [E := ?V : EZ |- (@eq EZ _ _)] => is_evar V; unify_EZeq E
   | [E := ?V : EB |- (@eq EZ _ _)] => is_evar V; unify_EBeq E
   | [E := ?V : bool |- (@eq EZ _ _)] => is_evar V; unify_booleq E
