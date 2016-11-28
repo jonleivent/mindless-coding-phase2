@@ -10,11 +10,11 @@ techniques, in an attempt to make them easier to use (phase 1 was a hodgepodge
 of many different techniques without much clarity - mostly just a proof of
 concept).
 
-This site uses Coq version 8.5. The exact file coq-version-used will be
+This site uses Coq version 8.6. The exact file coq-version-used will be
 updated with the output of coqtop --version, and the file coq-githash-used
 will be updated with the git hash (as reported by coqtop -batch for
 development versions) for the exact Coq build used.  However, all attempts
-will be made to keep compatibility with the released 8.5 version.
+will be made to keep compatibility with the released 8.6 version.
 
 First up: a rewrite of gaptrees, renamed to wavltrees, and made to correspond
 more closely with the work on weak-AVL trees at Princeton as reported in
