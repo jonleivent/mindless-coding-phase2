@@ -26,7 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 Require Import hypiter.
 Require Import factorevars.
 
-Global Set Injection On Proofs.
+Global Set Keep Proof Equalities.
 
 Inductive Erasable(A : Set) : Prop :=
   erasable: A -> Erasable A.
