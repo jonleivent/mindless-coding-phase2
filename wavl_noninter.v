@@ -539,4 +539,4 @@ Extract Inlined Constant Bool.bool_dec => "(=)".
 
 Extraction Inline Bool.Sumbool.sumbool_of_bool.
 
-Extraction "wavl-noninter.ml" find insert delete.
+Extraction "wavl_noninter.ml" find insert delete.

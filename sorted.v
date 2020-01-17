@@ -33,7 +33,7 @@ Require Export Sorted.
 
 Notation sorted := (LocallySorted lt).
 
-Hint Constructors LocallySorted.
+Hint Constructors LocallySorted : core.
 
 Section defs.
   Context {A : Set}.

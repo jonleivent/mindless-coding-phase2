@@ -30,6 +30,7 @@ Require Import utils.
 Require Import posall.
 Require Import factorevars.
 Require Import hypiter.
+Require Import Lia.
 
 Notation EZ := ##Z (only parsing).
 
@@ -49,6 +50,7 @@ Arguments ezopp !x.
 Definition ezmul(x y : EZ) := (lift2 Z.mul) x y.
 Arguments ezmul !x !y.
 
+Declare Scope E_scope.
 Notation "x + y" := (ezadd x y) : E_scope.
 Notation "x - y" := (ezsub x y) : E_scope.
 Notation "- x" := (ezopp x) : E_scope.
@@ -74,15 +76,18 @@ Notation "^ b" := (Eb2Z b) (at level 30, format "^ b") : E_scope.
 Lemma b2Zbounds : forall b, ^b >= 0 /\ ^b <= 1.
 Proof.
   dintros.
-  destruct b; cbn; omega.
+  destruct b; cbn; lia.
 Qed.
 
 (* How should we classify rewrite rules?  By their applicability -
 meaning by the type of formula in which they would have a chance of
 rewriting something. *)
 
+(*Set Default Proof Using "Type".
+Set Proof Using Clear Unused.*)
+
 Set Default Proof Using "Type".
-Set Proof Using Clear Unused.
+Set Suggest Proof Using.
 
 Section Bool_Rewrites.
 
@@ -123,7 +128,7 @@ Section EB_Rewrites.
   Variables b b1 b2 : EB.
 
   Tactic Notation "!!" :=
-    unerase; cbn; autorewrite with bool_term_rws bool_eq_rws unerase_rws; tauto.
+    clear; unerase; cbn; autorewrite with bool_term_rws bool_eq_rws unerase_rws; tauto.
 
   (*EB term rewrites*)
   Lemma Enegbf_rw : Enegb #false = #true. Proof. !!. Qed.
@@ -157,7 +162,7 @@ Section EZ_Desharping_Rewrites.
   Variables m n : Z.
   Variable b : bool.
 
-  Tactic Notation "!!" := cbn; reflexivity.
+  Tactic Notation "!!" := clear; cbn; reflexivity.
   Open Scope E_scope.
   Lemma eadd_desharp_rw : (#n + #m) = #(n + m)%Z. Proof. !!. Qed.
   Lemma esub_desharp_rw : (#n - #m) = #(n - m)%Z. Proof. !!. Qed.
@@ -217,7 +222,7 @@ Section Eb2Z_Rewrites.
   Variables b b1 b2 : EB.
 
   Tactic Notation "!!" :=
-    unerase; autorewrite with b2Z_term_rws b2Z_eq_rws; tauto.
+    clear; unerase; autorewrite with b2Z_term_rws b2Z_eq_rws; tauto.
   Open Scope E_scope.
   (*Eb2Z term rewrites*)
   Lemma Eb2Zt_rw : ^#true = #1. Proof. !!. Qed.
@@ -252,7 +257,7 @@ Hint Rewrite <- Eb2Z_inj_rw : simp_rws.
 Section Z_LHSify_Rewrites.
   Variables x y z : Z.
 
-  Tactic Notation "!!" := omega.
+  Tactic Notation "!!" := lia.
 
   Lemma zlhs_rw : x = y <-> x - y = 0. Proof. !!. Qed.
   Lemma zadd1_lhs_rw : x + y = z <-> x = z - y. Proof. !!. Qed.
@@ -270,7 +275,7 @@ End Z_LHSify_Rewrites.
 Section EZ_LHSify_Rewrites.
   Variables x y z : EZ.
 
-  Tactic Notation "!!" := unerase; omega.
+  Tactic Notation "!!" := clear; unerase; lia.
   Open Scope E_scope.
   Lemma Ezlhs_rw : x = y <-> x - y = #0. Proof. !!. Qed.
   Lemma Ezadd1_lhs_rw : x + y = z <-> x = z - y. Proof. !!. Qed.
@@ -375,9 +380,9 @@ Ltac bang_internal setup :=
   unerase;
   autorewrite with bang_rws in *;
   posall b2Zbounds;
-  (omega ||
+  (lia ||
    lazymatch goal with
-   | |- _ /\ _ => deconj; first[congruence|omega]
+   | |- _ /\ _ => deconj; first[congruence|lia]
    | _ => congruence
    end).
 

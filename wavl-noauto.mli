@@ -1,3 +1,4 @@
+
 type comparison =
 | Eq
 | Lt
@@ -8,8 +9,7 @@ type compareSpecT =
 | CompLtT
 | CompGtT
 
-type 'a sig0 =
-  'a
+type 'a sig0 = 'a
   (* singleton inductive, whose constructor was exist *)
 
 

@@ -33,11 +33,12 @@ Inductive Erasable(A : Set) : Prop :=
 
 Arguments erasable [A] _.
 
-Hint Constructors Erasable.
+Hint Constructors Erasable : core.
 
 Scheme Erasable_elim := Induction for Erasable Sort Prop.
 
 Module ErasableNotation.
+  Declare Scope Erasable_scope.
   Notation "## T" := (Erasable T) (at level 1, format "## T") : Erasable_scope.
   Notation "# x" := (erasable x) (at level 1, format "# x") : Erasable_scope.
   Open Scope Erasable_scope.

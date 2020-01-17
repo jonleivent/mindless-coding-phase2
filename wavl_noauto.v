@@ -668,4 +668,4 @@ Extraction Inline negb.
 
 Extract Inlined Constant Bool.bool_dec => "(=)".
 
-Extraction "wavl-noauto.ml" find insert delete.
+Extraction "wavl_noauto.ml" find insert delete.

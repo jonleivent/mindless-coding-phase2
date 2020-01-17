@@ -102,6 +102,7 @@ Hint Rewrite @red_app @lnenilrw : bang_rws.
 
 (* Some nice syntax for erasable lists.  Note the use of ^x instead
   of [x] - because for some reason [x] wouldn't work in all cases. *)
+Declare Scope E_scope.
 Infix "++" := Eapp (right associativity, at level 60) : E_scope.
 Notation " [ ] " := (# nil) : E_scope.
 Notation " [ x ] " := (# (cons x nil)) : E_scope.

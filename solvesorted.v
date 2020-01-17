@@ -45,7 +45,7 @@ Section defs.
   | slt1(a b : A) : lt a b -> slt a [b]
   | sltN(a b : A)(l : list A) : lt a b -> slt b l -> sorted (b::l) -> slt a (b::l).
 
-  Hint Constructors slt.
+  Hint Constructors slt : core.
 
   Infix "!<" := slt (at level 70) : list_scope.
 
@@ -72,7 +72,7 @@ Section defs.
   | lts1(a b : A) : lt a b -> lts [a] b
   | ltsN(a b : A)(l : list A) : lt a b -> lts l b -> sorted(a::l) -> lts (a::l) b.
 
-  Hint Constructors lts.
+  Hint Constructors lts : core.
 
   Infix "<!" := lts (at level 70) : list_scope.
 
