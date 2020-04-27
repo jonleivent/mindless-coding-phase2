@@ -16,8 +16,6 @@ type 'a sig0 = 'a
 
 type 'a ordered = { compare : ('a -> 'a -> comparison); compare_spec : ('a -> 'a -> compareSpecT) }
 
-val compare_spec : 'a1 ordered -> 'a1 -> 'a1 -> compareSpecT
-
 type a (* AXIOM TO BE REALIZED *)
 
 val ordA : a ordered

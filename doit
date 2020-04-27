@@ -1,7 +1,7 @@
 #!/bin/sh
 
 coqtop --version > coq-version-used
-coqtop -batch | sed 's/^.*(\([0-9a-f]*\))/\1/' > coq-githash-used
+git hash-object `which coqtop` > coq-githash-used
 make clean
 make
 time coqtop -m -time -batch -R . mindless -impredicative-set -l wavl_noauto.v
