@@ -43,7 +43,7 @@ Section defs.
   Inductive slt : A -> list A -> Prop :=
   | slt0(a : A) : slt a []
   | slt1(a b : A) : lt a b -> slt a [b]
-  | sltN(a b : A)(l : list A) : lt a b -> slt b l -> sorted (b::l) -> slt a (b::l).
+  | sltN(a b : A)(l : list A) : lt a b -> slt b l -> slt a (b::l).
 
   Hint Constructors slt : core.
 
@@ -51,20 +51,21 @@ Section defs.
 
   Lemma sorted2slt : forall l a, sorted (a::l) <-> a !< l.
   Proof.
-    induction l as [|a' l IHl].
-    - intros a. split.
-      + intros H. constructor.
-      + intros H. simpl. constructor.
-    - intros a. split.
-      + intros H. constructor.
-        * inversion H. assumption.
-        * eapply IHl. inversion H. assumption.
-        * inversion H. assumption.
-      + intros H. constructor.
-        * eapply IHl. inversion H; subst.
-          { constructor. }
-          { assumption. }
-        * inversion H; assumption.
+    induction l as [|a' l IHl]; split; intro H.
+    - constructor.
+    - constructor.
+    - inversion H.
+      constructor.
+      + assumption.
+      + eapply IHl.
+        assumption.
+    - inversion H.
+      + repeat constructor.
+        assumption.
+      + constructor.
+        * eapply IHl.
+          assumption.
+        * assumption.
   Qed.
 
   Inductive lts : list A -> A -> Prop :=
@@ -90,7 +91,7 @@ Section defs.
           { assumption. }
         * apply sortedl in H. assumption.
       + intros H. destruct l.
-        * subst. simpl. constructor.
+        * simpl. constructor.
           { constructor. }
           { inversion H; assumption. }
         * simpl. constructor.
@@ -103,19 +104,17 @@ Section defs.
   Lemma sorted2both : forall l1 l2 a, sorted (l1++a::l2) <-> l1 <! a /\ a !< l2.
   Proof.
     intros l1 l2 a.
+    rewrite <- sorted2lts.
+    rewrite <- sorted2slt.
     split.
     - intro H.
       split.
-      + rewrite <- sorted2lts.
-        eapply sortedl.
+      + eapply sortedl.
         rewrite <- app_assoc.
         simpl. eassumption.
-      + rewrite <- sorted2slt.
-        eapply sortedr.
+      + eapply sortedr.
         eassumption.
     -intros (H1 & H2).
-     rewrite <- sorted2lts in H1.
-     rewrite <- sorted2slt in H2.
      generalize dependent l1. induction l1.
      + intro. assumption.
      + intro H.
@@ -161,7 +160,6 @@ Section defs.
       + repeat split; eauto.
     - intros (H1 & H2).
       econstructor; eauto.
-      rewrite sorted2slt. assumption.
   Qed.
 
   Lemma rwslts : forall a b l2 l3, a !< l2++b::l3 <-> a !< l2  /\ lt a b /\ l2 <! b /\ b !< l3.
@@ -197,7 +195,6 @@ Section defs.
     - constructor. transitivity b; assumption.
     - constructor.
       + transitivity b; assumption.
-      + assumption.
       + assumption.
   Defined.
 
@@ -238,7 +235,8 @@ Section defs.
     inversion H; subst.
     - constructor.
     - constructor.
-    - assumption.
+    - rewrite sorted2slt.
+      assumption.
   Qed.
 
   Lemma ltsleft : forall l0 l1 a, (l0++l1) <! a -> l0 <! a.
@@ -372,22 +370,31 @@ Hint Rewrite <- app_comm_cons : solveSortedDB.
 
 Hint Constructors LocallySorted lts slt : solveSortedDB.
 
-Hint Resolve lts_trans slt_trans sltleft sltright ltsright1 sltlts2sorted sltapp : solveSortedDB.
+Hint Resolve lts_trans slt_trans sltleft sltright ltsright1 sltlts2sorted sltapp ltssorted sltsorted : solveSortedDB.
 
-Ltac solve_sorted := 
+Ltac solve_sorted1 := 
   intros; subst; simpl in *;
   autorewrite with solveSortedDB in *;
-  try (progress (intuition (simpl in *; eauto with solveSortedDB)); solve_sorted).
+  try (progress (intuition (simpl in *; eauto with solveSortedDB)); solve_sorted1).
 
+Ltac solve_sorted :=
+  intros;
+  subst;
+  repeat (simpl in *; autorewrite with solveSortedDB in *);
+  intuition;
+  eauto with solveSortedDB.
+
+(*
 Hint Extern 10 (sorted ?X) => match goal with 
                                 | H : lts X _ |- _ => apply (ltssorted _ _ H)
                                 | H : slt _ X |- _ => apply (sltsorted _ _ H) end
                               : solveSortedDB.
 
+
 Hint Extern 20 =>
 match goal with H : sorted (?L0++?L1++[?A]++?L2) |- _ => 
                 apply sorted2both2 in H; solve_sorted end : solveSortedDB.
-
+*)
 Hint Extern 10 (lt _ _) => eapply transitivity : solveSortedDB.
 
 (************************************************************************)
