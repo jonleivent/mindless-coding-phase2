@@ -23,11 +23,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ***********************************************************************)
 
-Require Export sorted.
-Require Export solvesorted.
-Require Export erasable.
+Require Export mindless.sorted.
+Require Export mindless.solvesorted.
+Require Export mindless.erasable.
 Export ErasableNotation.
-Require Import utils.
+Require Import mindless.utils.
 
 Notation " [ ] " := nil (format "[ ]") : list_scope.
 Notation " [ x ] " := (cons x nil) : list_scope.

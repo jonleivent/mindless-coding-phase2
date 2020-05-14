@@ -33,12 +33,14 @@ See "Rank-Balanced Trees" by Haeupler, Sen, Tarjan
 tailored specific solver tactics.  Note that the general "boom" and "ss"
 automation tactics are still used throughout. *)
 
-Require Import elist.
-Require Import ezbool.
-Require Import utils.
-Require Import hypiter.
+Require Import mindless.elist.
+Require Import mindless.ezbool.
+Require Import mindless.utils.
+Require Import mindless.hypiter.
 
 Generalizable All Variables.
+
+Set Default Goal Selector "all".
 
 Context {A : Set}.
 
@@ -125,45 +127,37 @@ Section Lemmas.
   
   Lemma wavl_min_rank`(w : wavltree k g lg rg c) : k >= - #1.
   Proof.
-    induction w.
-    boom.
-    boom.
+    induction w. boom.
   Qed.
   
   Lemma wavl_node_min_rank`(w : wavltree k g lg rg c) : c <> [] -> k >= #0.
   Proof.
-    ?? w.
-    pose proof (wavl_min_rank (left_child w)). boom.
-    boom.
+    ?? w. 1: pose proof (wavl_min_rank (left_child w)). boom.
   Qed.
   
   Lemma wavl_node_nonempty`(w : wavltree k g lg rg c) : k >= #0 -> c <> [].
   Proof.
-    ?? w.
-    boom.
-    boom.
+    ?? w. boom.
   Qed.
   
   Lemma missing_contents`(w : wavltree (- #1) g lg rg c) : c = [].
   Proof.
-    pose proof (wavl_node_min_rank w).
-    ?? w.
-    boom.
-    reflexivity.
+    pose proof (wavl_node_min_rank w) as H.
+    ?? w. boom.
   Qed.
 
   Lemma missing_rank`(w : wavltree k g lg rg []) : k = - #1.
   Proof.
     ?? w.
-    fnenil.
-    reflexivity.
+    - fnenil.
+    - reflexivity.
   Qed.
   
   Lemma wavl_is_sorted`(w : wavltree k g lg rg c) : Esorted c.
   Proof.
     ?? w.
-    assumption.
-    repeat econstructor.
+    - assumption.
+    - repeat econstructor.
   Qed.
 
 End Lemmas.
@@ -204,7 +198,7 @@ Section Check_Leaf_Rule.
   Proof.
     unfold is_leaf.
     repeat destruct_match.
-    all: [>boom..].
+    boom.
   Qed.
 
 End Check_Leaf_Rule.
@@ -238,8 +232,8 @@ Section SetGap.
   Definition setgap`(w : wavltree k ig lg rg c)(og : bool) : wavltree k #og lg rg c.
   Proof.
     ?? w.
-    - eapply Node. reflexivity. reflexivity. all:eassumption.
-    - eapply Missing. all:reflexivity.
+    - eapply Node. reflexivity + eassumption.
+    - eapply Missing. reflexivity.
   Qed.
 
 End SetGap.
@@ -292,6 +286,10 @@ Ltac start_node := eapply Node; [reflexivity|reflexivity|..].
 Ltac missing := eapply Missing; [reflexivity|boom|reflexivity|reflexivity].
 Ltac use w := force refine w by boom.
 Ltac use_regap w := force refine (setgap w _) by boom.
+Ltac use_node :=
+  lazymatch goal with
+    w: wavltree _ _ _ _ ?C |- wavltree _ _ _ _ ?C => use w + use_regap w
+  end.
 Ltac finish :=
   match goal with
   | |- Esorted _ => ss
@@ -306,12 +304,38 @@ Section Insert_Rotations.
     ?? lw.
     - ?? (right_child lw).
       + ?? (gap (right_child lw)).
-        * rootify d. start_node. use lw0.
-          rootify x. start_node. use_regap rw0. use_regap rw. all:finish.
-        * rootify d0. start_node. start_node. use_regap lw0. use lw1. finish. finish.
-          start_node. use rw1. use_regap rw. all:finish.
+        * rootify (datum lw). start_node.
+          -- use_node. (* use (left_child lw).*)
+          -- rootify x. start_node.
+             ++ use_node. (*use_regap (right_child lw).*)
+             ++ use_node. (*use_regap rw.*)
+             ++ finish.
+             ++ finish.
+          -- finish.
+          -- finish.
+        * rootify (datum (right_child lw)). start_node.
+          -- start_node.
+             ++ use_node. (*use_regap (left_child lw).*)
+             ++ use_node. (*use (left_child (right_child lw)).*)
+             ++ finish.
+             ++ finish.
+          -- start_node.
+             ++ use_node. (*use (right_child (right_child lw)).*)
+             ++ use_node. (*use_regap rw.*)
+             ++ finish.
+             ++ finish.
+          -- finish.
+          -- finish.
       + assert (k = #1) as -> by boom. rsimp. apply missing_contents in rw as ->.
-        rootify d. start_node. use lw0. start_node. missing. missing. all:finish.
+        rootify (datum lw). start_node.
+        * use_node. (*use (left_child lw).*)
+        * start_node.
+          -- missing.
+          -- missing.
+          -- finish.
+          -- finish.
+        * finish.
+        * finish.
     - boom.
   Qed.
 
@@ -321,13 +345,38 @@ Section Insert_Rotations.
     ?? rw.
     - ?? (left_child rw).
       + ?? (gap (left_child rw)).
-        * rootify d. start_node. start_node. use_regap lw. use_regap lw0. finish. finish.
-          use rw0. all:finish.
-        * rootify d0. start_node. start_node. use_regap lw. use lw1. finish. finish.
-          start_node. use rw1. use_regap rw0. all:finish.
+        * rootify (datum rw). start_node.
+          -- start_node.
+             ++ use_node. (*use_regap lw.*)
+             ++ use_node. (*use_regap (left_child rw).*)
+             ++ finish.
+             ++ finish.
+          -- use_node. (*use (right_child rw).*)
+          -- finish.
+          -- finish.
+        * rootify (datum (left_child rw)). start_node.
+          -- start_node.
+             ++ use_node. (*use_regap lw.*)
+             ++ use_node. (*use (left_child (left_child rw)).*)
+             ++ finish.
+             ++ finish.
+          -- start_node.
+             ++ use_node. (*use (right_child (left_child rw)).*)
+             ++ use_node. (*use_regap (right_child rw).*)
+             ++ finish.
+             ++ finish.
+          -- finish.
+          -- finish.
       + assert (k = #1) as -> by boom. rsimp. apply missing_contents in lw as ->.
-        rootify d. start_node. start_node. missing. missing. finish. finish.
-        use rw0. all:finish.
+        rootify (datum rw). start_node.
+        * start_node.
+          -- missing.
+          -- missing.
+          -- finish.
+          -- finish.
+        * use_node. (*use (right_child rw).*)
+        * finish.
+        * finish.
     - boom.
   Qed.
 
@@ -371,6 +420,15 @@ Section Insert.
     reflexivity.
   Qed.
 
+  Ltac tree_with x :=
+    match goal with
+      H:wavltree _ _ _ _ ?C |- _ =>
+      lazymatch C with context[x] => H end
+    end.
+
+  Notation "'tree_with' x" := ltac:(just tree_with x)
+                                    (at level 199, no associativity, only parsing).
+
   Fixpoint insert(x : A)`(w : wavltree k g lg rg c) : insertResult x k g lg rg c.
   Proof.
     ?? w.
@@ -378,55 +436,120 @@ Section Insert.
       + eapply FoundByInsert. reflexivity.
       + ?? (insert x) on (left_child w).
         * ?? (pick insertedHow).
-          -- reassoc. eapply Inserted. reflexivity.
-             rootify d. start_node. use ow. use rw. finish. finish.
-             eapply ISameK. boom. boom.
+          -- assoc 0. eapply Inserted.
+             ++ reflexivity.
+             ++ rootify (datum w). start_node.
+               ** use_node. (*use (tree_with x).*)
+                ** use_node. (*use (right_child w).*)
+                ** finish.
+                ** finish.
+             ++ eapply ISameK. boom.
           -- ?? (isMissing (right_child w)).
-             ++ reassoc. eapply Inserted. reflexivity.
-                rootify d. start_node. use ow. missing. finish. finish.
-                eapply IHigherK. boom. boom. boom. boom.
-             ++ reassoc. eapply Inserted. reflexivity.
-                rootify d. start_node. use ow. use rw. finish. finish.
-                eapply ISameK. boom. boom.
+             ++ assoc 0. eapply Inserted.
+                ** reflexivity.
+                ** rootify (datum w). start_node.
+                   --- use_node. (*use (tree_with x).*)
+                   --- missing.
+                   --- finish.
+                   --- finish.
+                ** eapply IHigherK. boom.
+             ++ assoc 0. eapply Inserted.
+                ** reflexivity.
+                ** rootify (datum w). start_node.
+                   --- use_node. (*use (tree_with x).*)
+                   --- use_node. (*use (right_child w).*)
+                   --- finish.
+                   --- finish.
+                ** eapply ISameK. boom.
           -- unerase_gaps. ?? (gap (left_child w)).
-             ++ reassoc. eapply Inserted. reflexivity.
-                rootify d. start_node. use ow. use rw. finish. finish.
-                eapply ISameK. boom. boom.
+             ++ assoc 0. eapply Inserted.
+                ** reflexivity.
+                ** rootify (datum w). start_node.
+                   --- use_node. (*use (tree_with x).*)
+                   --- use_node. (*use (right_child w).*)
+                   --- finish.
+                   --- finish.
+                ** eapply ISameK. boom.
              ++ ?? (isgap (right_child w) false).
-                ** reassoc. eapply Inserted. reflexivity.
-                   rootify d. start_node. use ow. use_regap rw. finish. finish.
-                   eapply IHigherK. boom. boom. boom. boom.
-                ** reassoc. eapply Inserted. reflexivity.
-                   rootify d. eapply irot1. use ow. use rw. finish. finish.
-                   eapply ISameK. boom. boom.
+                ** assoc 0. eapply Inserted.
+                   --- reflexivity.
+                   --- rootify (datum w). start_node.
+                       +++ use_node. (*use (tree_with x).*)
+                       +++ use_node. (*use_regap (right_child w).*)
+                       +++ finish.
+                       +++ finish.
+                   --- eapply IHigherK. boom.
+                ** assoc 0. eapply Inserted.
+                   --- reflexivity.
+                   --- rootify (datum w). eapply irot1.
+                       +++ use_node. (*use (tree_with x).*)
+                       +++ use_node. (*use (right_child w).*)
+                       +++ finish.
+                       +++ finish.
+                   --- eapply ISameK. boom.
         * rootify x. eapply FoundByInsert. reflexivity.
       + ?? (insert x) on (right_child w).
         * ?? (pick insertedHow).
-          -- assoc 2. eapply Inserted. reflexivity.
-             rootify d. start_node. use lw. use ow. finish. finish.
-             eapply ISameK. boom. boom.
+          -- assoc 2. eapply Inserted.
+             ++ reflexivity.
+             ++ rootify (datum w). start_node.
+                ** use_node. (*use (left_child w).*)
+                ** use_node. (*use (tree_with x).*)
+                ** finish.
+                ** finish.
+             ++ eapply ISameK. boom.
           -- ?? (isMissing (left_child w)).
-             ++ assoc 2. eapply Inserted. reflexivity.
-                rootify d. start_node. missing. use ow. finish. finish.
-                eapply IHigherK. boom. boom. boom. boom.
-             ++ assoc 2. eapply Inserted. reflexivity.
-                rootify d. start_node. use lw. use ow. finish. finish.
-                eapply ISameK. boom. boom.
+             ++ assoc 2. eapply Inserted.
+                ** reflexivity.
+                ** rootify (datum w). start_node.
+                   --- missing.
+                   --- use_node. (*use (tree_with x).*)
+                   --- finish.
+                   --- finish.
+                ** eapply IHigherK. boom.
+             ++ assoc 2. eapply Inserted.
+                ** reflexivity.
+                ** rootify (datum w). start_node.
+                   --- use_node. (*use (left_child w).*)
+                   --- use_node. (*use (tree_with x).*)
+                   --- finish.
+                   --- finish.
+                ** eapply ISameK. boom.
           -- unerase_gaps. ?? (gap (right_child w)).
-             ++ assoc 2. eapply Inserted. reflexivity.
-                rootify d. start_node. use lw. use ow. finish. finish.
-                eapply ISameK. boom. boom.
+             ++ assoc 2. eapply Inserted.
+                ** reflexivity.
+                ** rootify (datum w). start_node.
+                   --- use_node. (*use (left_child w).*)
+                   --- use_node. (*use (tree_with x).*)
+                   --- finish.
+                   --- finish.
+                ** eapply ISameK. boom.
              ++ ?? (isgap (left_child w) false).
-                ** assoc 2. eapply Inserted. reflexivity.
-                   rootify d. start_node. use_regap lw. use ow. finish. finish.
-                   eapply IHigherK. boom. boom. boom. boom.
-                ** assoc 2. eapply Inserted. reflexivity.
-                   rootify d. eapply irot2. use lw. use ow. finish. finish.
-                   eapply ISameK. boom. boom.
+                ** assoc 2. eapply Inserted.
+                   --- reflexivity.
+                   --- rootify (datum w). start_node. all: [>use_node|use_node|..].
+                    (* +++ use_regap (left_child w).
+                       +++ use (tree_with x). *)
+                       +++ finish.
+                       +++ finish.
+                   --- eapply IHigherK. boom.
+                ** assoc 2. eapply Inserted.
+                   --- reflexivity.
+                   --- rootify (datum w). eapply irot2.
+                       +++ use_node. (*use (left_child w).*)
+                       +++ use_node. (*use (tree_with x).*)
+                       +++ finish.
+                       +++ finish.
+                   --- eapply ISameK.  boom.
         * rootify x. eapply FoundByInsert. reflexivity.
-    - eapply Inserted. eapply nilnilnil.
-      start_node. missing. missing. finish. finish.
-      eapply IWasMissing. boom. boom. boom.
+    - eapply Inserted.
+      + eapply nilnilnil.
+      + start_node.
+        * missing.
+        * missing.
+        * finish.
+        * finish.
+      + eapply IWasMissing. boom.
   Qed.
 
 End Insert.
@@ -444,8 +567,14 @@ Section TryLowering.
     ?? w.
     - ?? (isgap (left_child w) true).
       + ?? (isgap (right_child w) true).
-        * eapply TLlowered. reflexivity. reflexivity.
-          start_node. use_regap lw. use_regap rw. finish. finish.
+        * eapply TLlowered.
+          -- reflexivity.
+          -- reflexivity.
+          -- start_node.
+             ++ use_node. (*use_regap (left_child w).*)
+             ++ use_node. (*use_regap (right_child w).*)
+             ++ finish.
+             ++ finish.
         * eapply TLtooLow. boom.
       + eapply TLtooLow. boom.
     - eapply TLtooLow. boom.
@@ -468,14 +597,50 @@ Section Delete_Rotations.
     ?? rw.
     - ?? (left_child rw).
       + ?? (isgap (right_child rw) false).
-        * eapply Delout. apply DSameK. reflexivity. reflexivity.
-          rootify d. start_node. start_node. use lw. use lw0. finish. finish. use_regap rw0. finish. finish.
-        * eapply Delout. apply DSameK. reflexivity. reflexivity.
-          rootify d0. start_node. start_node. use_regap lw. use lw1. finish. finish.
-          start_node. use rw1. use_regap rw0. all:finish.
+        * eapply Delout.
+          -- apply DSameK.
+             ++ reflexivity.
+             ++ reflexivity.
+          -- rootify (datum rw). start_node.
+             ++ start_node.
+                ** use_node. (*use lw.*)
+                ** use_node. (*use (left_child rw).*)
+                ** finish.
+                ** finish.
+             ++ use_node. (*use_regap (right_child rw).*)
+             ++ finish.
+             ++ finish.
+        * eapply Delout.
+          -- apply DSameK.
+             ++ reflexivity.
+             ++ reflexivity.
+          -- rootify (datum (left_child rw)). start_node.
+             ++ start_node. 1-2:use_node.
+             (* ** use_node. (*use_regap lw.*)
+                ** use_node. (*use (left_child (left_child rw)).*)*)
+                ** finish.
+                ** finish.
+             ++ start_node.
+                ** use_node. (*use (right_child (left_child rw)).*)
+                ** use_node. (*use_regap (right_child rw).*)
+                ** finish.
+                ** finish.
+             ++ finish.
+             ++ finish.
       + assert (k = #2) as -> by boom. rsimp. apply missing_contents in lw as ->.
-        eapply Delout. apply DSameK. reflexivity. reflexivity.
-        rootify d. start_node. start_node. missing. missing. finish. finish. use_regap rw0. all:finish.
+        eapply Delout.
+        * apply DSameK.
+          -- reflexivity.
+          -- reflexivity.
+        * rootify (datum rw). start_node.
+          -- start_node.
+             ++ missing.
+             ++ missing.
+             ++ finish.
+             ++ finish.
+          -- use_node. (*use_regap (right_child rw).*)
+          -- finish.
+          -- finish.
     - boom.
   Qed.
 
@@ -485,15 +650,50 @@ Section Delete_Rotations.
     ?? lw.
     - ?? (right_child lw).
       + ?? (isgap (left_child lw) false).
-        * eapply Delout. apply DSameK. reflexivity. reflexivity.
-          rootify d. start_node. use_regap lw0.
-          rootify x. start_node. use rw0. use rw. all:finish.
-        * eapply Delout. apply DSameK. reflexivity. reflexivity.
-          rootify d0. start_node. start_node. use_regap lw0. use lw1. finish. finish.
-          start_node. use rw1. use_regap rw. all:finish.
+        * eapply Delout.
+          -- apply DSameK.
+             ++ reflexivity.
+             ++ reflexivity.
+          -- rootify (datum lw). start_node.
+             ++ use_node. (*use_regap (left_child lw).*)
+             ++ rootify x. start_node.
+                ** use_node. (*use (right_child lw).*)
+                ** use_node. (*use rw.*)
+                ** finish.
+                ** finish.
+             ++ finish.
+             ++ finish.
+        * eapply Delout.
+          -- apply DSameK.
+             ++ reflexivity.
+             ++ reflexivity.
+          -- rootify (datum (right_child lw)). start_node.
+             ++ start_node. 1-2:use_node.
+             (* ** use_node. (*use_regap (left_child lw).*)
+                ** use_node. (*use (left_child (right_child lw)).*)*)
+                ** finish.
+                ** finish.
+             ++ start_node.
+                ** use_node. (*use (right_child (right_child lw)).*)
+                ** use_node. (*use_regap rw.*)
+                ** finish.
+                ** finish.
+             ++ finish.
+             ++ finish.
       + assert (k = #2) as -> by boom. rsimp. apply missing_contents in rw as ->.
-        eapply Delout. apply DSameK. reflexivity. reflexivity.
-        rootify d. start_node. use_regap lw0. start_node. missing. missing. all:finish.
+        eapply Delout.
+        * apply DSameK.
+          -- reflexivity.
+          -- reflexivity.
+        * rootify (datum lw). start_node.
+          -- use_node. (*use_regap (left_child lw).*)
+          -- start_node.
+             ++ missing.
+             ++ missing.
+             ++ finish.
+             ++ finish.
+          -- finish.
+          -- finish.
     - boom.
   Qed.
 
@@ -508,28 +708,70 @@ Section Delete_Minimum.
   Proof.
     ?? w.
     - ?? (isMissing (left_child w)).
-      + eapply MinDeleted. rewrite Eapp_nil_l. reflexivity.
-        eapply Delout. apply DLowerK. reflexivity. reflexivity.
-        use_regap rw.
-      + ?? delmin on (left_child w). boom. ?? (pick delpair). ?? (pick deletedHow).
-        * eapply MinDeleted. reassoc. reflexivity.
-          eapply Delout. apply DSameK. reflexivity. reflexivity.
-          start_node. use ow. use rw. all:finish.
-        * ?? (isgap (right_child w) false).
-          -- ?? (isgap (left_child w) true).
-             ++ ?? (tryLowering (right_child w)).
-                ** eapply MinDeleted. reassoc. reflexivity.
-                   eapply Delout. apply DLowerK. reflexivity. reflexivity.
-                   start_node. use ow. use ow0. all:finish.
-                ** eapply MinDeleted. reassoc. reflexivity.
-                   eapply drot1. use ow. use rw. all:finish.
-             ++ eapply MinDeleted. reassoc. reflexivity.
-                eapply Delout. apply DSameK. reflexivity. reflexivity.
-                start_node. use ow. use rw. all:finish.
-          -- unerase_gaps.
-             eapply MinDeleted. reassoc. reflexivity.
-             eapply Delout. apply DLowerK. reflexivity. reflexivity.
-             start_node. use_regap ow. use_regap rw. all:finish.
+      + eapply MinDeleted.
+        * rewrite Eapp_nil_l. reflexivity.
+        * eapply Delout.
+          -- apply DLowerK.
+             ++ reflexivity.
+             ++ reflexivity.
+          -- use_node. (*use_regap rw.*)
+      + ?? delmin on (left_child w).
+        * boom.
+        * ?? (pick delpair). ?? (pick deletedHow).
+          -- eapply MinDeleted.
+             ++ assoc 0. reflexivity.
+             ++ eapply Delout.
+                ** apply DSameK.
+                   --- reflexivity.
+                   --- reflexivity.
+                ** start_node.
+                   --- use_node. (*use ow.*)
+                   --- use_node. (*use rw.*)
+                   --- finish.
+                   --- finish.
+          -- ?? (isgap (right_child w) false).
+             ++ ?? (isgap (left_child w) true).
+                ** ?? (tryLowering (right_child w)).
+                   --- eapply MinDeleted.
+                       +++ assoc 0. reflexivity.
+                       +++ eapply Delout.
+                           *** apply DLowerK.
+                               ---- reflexivity.
+                               ---- reflexivity.
+                           *** start_node.
+                               ---- use_node. (*use ow.*)
+                               ---- use_node. (*use ow0.*)
+                               ---- finish.
+                               ---- finish.
+                   --- eapply MinDeleted.
+                       +++ assoc 0. reflexivity.
+                       +++ eapply drot1.
+                           *** use_node. (*use ow.*)
+                           *** use_node. (*use rw.*)
+                           *** finish.
+                           *** finish.
+                ** eapply MinDeleted.
+                   --- assoc 0. reflexivity.
+                   --- eapply Delout.
+                       +++ apply DSameK.
+                           *** reflexivity.
+                           *** reflexivity.
+                       +++ start_node.
+                           *** use_node. (*use ow.*)
+                           *** use_node. (*use rw.*)
+                           *** finish.
+                           *** finish. 
+             ++ unerase_gaps. eapply MinDeleted.
+                ** assoc 0. reflexivity.
+                ** eapply Delout.
+                   --- apply DLowerK.
+                       +++ reflexivity.
+                       +++ reflexivity.
+                   --- start_node.
+                       +++ use_node. (*use_regap ow.*)
+                       +++ use_node. (*use_regap rw.*)
+                       +++ finish.
+                       +++ finish.
     - boom.
   Qed.
 
@@ -544,27 +786,70 @@ Section Delete_Maximum.
   Proof.
     ?? w.
     - ?? (isMissing (right_child w)).
-      + eapply MaxDeleted. rewrite Eapp_nil_r. reflexivity.
-        eapply Delout. apply DLowerK. reflexivity. reflexivity.
-        use_regap lw.
-      + ?? delmax on (right_child w). boom. ?? (pick delpair). ?? (pick deletedHow).
-        * eapply MaxDeleted. assoc 2. reflexivity.
-          eapply Delout. apply DSameK. reflexivity. reflexivity.
-          start_node. use lw. use ow. all:finish.
-        * ?? (isgap (left_child w) false).
-          -- ?? (isgap (right_child w) true).
-             ++ ?? (tryLowering (left_child w)).
-                ** eapply MaxDeleted. assoc 2. reflexivity.
-                   eapply Delout. apply DLowerK. reflexivity. reflexivity.
-                   start_node. use ow0. use ow. all:finish.
-                ** eapply MaxDeleted. assoc 2. reflexivity.
-                   eapply drot2. use lw. use ow. all:finish.
-             ++ eapply MaxDeleted. assoc 2. reflexivity.
-                eapply Delout. apply DSameK. reflexivity. reflexivity.
-                start_node. use lw. use ow. all:finish.
-          -- unerase_gaps. eapply MaxDeleted. assoc 2. reflexivity.
-             eapply Delout. apply DLowerK. reflexivity. reflexivity.
-             start_node. use_regap lw. use_regap ow. all:finish.
+      + eapply MaxDeleted.
+        * rewrite Eapp_nil_r. reflexivity.
+        * eapply Delout.
+          -- apply DLowerK.
+             ++ reflexivity.
+             ++ reflexivity.
+          -- use_node. (*use_regap lw.*)
+      + ?? delmax on (right_child w).
+        * boom.
+        * ?? (pick delpair). ?? (pick deletedHow).
+          -- eapply MaxDeleted.
+             ++ assoc 2. reflexivity.
+             ++ eapply Delout.
+                ** apply DSameK.
+                   --- reflexivity.
+                   --- reflexivity.
+                ** start_node.
+                   --- use_node. (*use lw.*)
+                   --- use_node. (*use ow.*)
+                   --- finish.
+                   --- finish.
+        -- ?? (isgap (left_child w) false).
+           ++  ?? (isgap (right_child w) true).
+               ** ?? (tryLowering (left_child w)).
+                  --- eapply MaxDeleted.
+                      +++ assoc 2. reflexivity.
+                      +++ eapply Delout.
+                          *** apply DLowerK.
+                              ---- reflexivity.
+                              ---- reflexivity.
+                          *** start_node.
+                              ---- use_node. (*use ow0.*)
+                              ---- use_node. (*use ow.*)
+                              ---- finish.
+                              ---- finish.
+                  --- eapply MaxDeleted.
+                      +++ assoc 2. reflexivity.
+                      +++ eapply drot2.
+                          *** use_node. (*use lw.*)
+                          *** use_node. (*use ow.*)
+                          *** finish.
+                          *** finish.
+               ** eapply MaxDeleted.
+                  --- assoc 2. reflexivity.
+                  --- eapply Delout.
+                      +++ apply DSameK.
+                          *** reflexivity.
+                          *** reflexivity.
+                      +++ start_node.
+                          *** use_node. (*use lw.*)
+                          *** use_node. (*use ow.*)
+                          *** finish.
+                          *** finish.
+           ++ unerase_gaps. eapply MaxDeleted.
+              ** assoc 2. reflexivity.
+              ** eapply Delout.
+                 --- apply DLowerK.
+                     +++ reflexivity.
+                     +++ reflexivity.
+                 --- start_node.
+                     +++ use_node. (*use_regap lw.*)
+                     +++ use_node. (*use_regap ow.*)
+                     +++ finish.
+                     +++ finish.
     - boom.
   Qed.
 
@@ -581,75 +866,209 @@ Section Delete.
     ?? w.
     - ?? (x =<> (datum w)).
       + ?? (isMissing (left_child w)).
-        * eapply Deleted. reflexivity.
-          eapply Delout. apply DLowerK. reflexivity. reflexivity.
-          rewrite Eapp_nil_l. use_regap rw.
+        * eapply Deleted.
+          -- reflexivity.
+          -- eapply Delout.
+             ++ apply DLowerK.
+                ** reflexivity.
+                ** reflexivity.
+             ++ rewrite Eapp_nil_l. use_node. (*use_regap rw.*)
         * ?? (isMissing (right_child w)).
-          -- eapply Deleted. reflexivity.
-             eapply Delout. apply DLowerK. reflexivity. reflexivity.
-             rewrite Eapp_nil_r. use_regap lw.
+          -- eapply Deleted.
+             ++ reflexivity.
+             ++ eapply Delout.
+                ** apply DLowerK.
+                   --- reflexivity.
+                   --- reflexivity.
+                ** rewrite Eapp_nil_r. use_node. (*use_regap lw.*)
           -- unerase_gaps. ?? (gap (left_child w)).
-             ++ ?? (delmin (right_child w)). boom. ?? (pick delpair). ?? (pick deletedHow).
-                ** eapply Deleted. reflexivity.
-                   eapply Delout. apply DSameK. reflexivity. reflexivity.
-                   start_node. use lw. use ow. all:finish.
-                ** eapply Deleted. reflexivity.
-                   eapply Delout. apply DLowerK. reflexivity. reflexivity.
-                   start_node. use_regap lw. use_regap ow. all:finish.
-             ++ ?? (delmax (left_child w)). boom. ?? (pick delpair). ?? (pick deletedHow).
-                ** eapply Deleted. reflexivity.
-                   eapply Delout. apply DSameK. reflexivity. reflexivity.
-                   assoc 0. start_node. use ow. use rw. all:finish.
-                ** eapply Deleted. reflexivity.
-                   eapply Delout. apply DSameK. reflexivity. reflexivity.
-                   assoc 0. start_node. use ow. use rw. all:finish.
+             ++ ?? (delmin (right_child w)).
+                ** boom.
+                ** ?? (pick delpair). ?? (pick deletedHow).
+                   --- eapply Deleted.
+                       +++ reflexivity.
+                       +++ eapply Delout.
+                           *** apply DSameK.
+                               ---- reflexivity.
+                               ---- reflexivity.
+                           *** start_node.
+                               ---- use_node. (*use lw.*)
+                               ---- use_node. (*use ow.*)
+                               ---- finish.
+                               ---- finish.
+                   --- eapply Deleted.
+                       +++ reflexivity.
+                       +++ eapply Delout.
+                           *** apply DLowerK.
+                               ---- reflexivity.
+                               ---- reflexivity.
+                           *** start_node.
+                               ---- use_node. (*use_regap lw.*)
+                               ---- use_node. (*use_regap ow.*)
+                               ---- finish.
+                               ---- finish.
+             ++ ?? (delmax (left_child w)).
+                ** boom.
+                ** ?? (pick delpair). ?? (pick deletedHow).
+                   --- eapply Deleted.
+                       +++ reflexivity.
+                       +++ eapply Delout.
+                           *** apply DSameK.
+                               ---- reflexivity.
+                               ---- reflexivity.
+                           *** assoc 0. start_node.
+                               ---- use_node. (*use ow.*)
+                               ---- use_node. (*use rw.*)
+                               ---- finish.
+                               ---- finish.
+                   --- eapply Deleted.
+                       +++ reflexivity.
+                       +++ eapply Delout.
+                           *** apply DSameK.
+                               ---- reflexivity.
+                               ---- reflexivity.
+                           *** assoc 0. start_node.
+                               ---- use_node. (*use ow.*)
+                               ---- use_node. (*use rw.*)
+                               ---- finish.
+                               ---- finish.
       + ?? (delete x) on (left_child w).
         * ?? (pick delpair). ?? (pick deletedHow).
-          -- eapply Deleted. rootify x. reflexivity.
-             eapply Delout. apply DSameK. reflexivity. reflexivity.
-             rootify d. start_node. use ow. use rw. all:finish.
+          -- eapply Deleted.
+             ++ rootify x. reflexivity.
+             ++ eapply Delout.
+                ** apply DSameK.
+                   --- reflexivity.
+                   --- reflexivity.
+                ** rootify d. start_node.
+                   --- use_node. (*use ow.*)
+                   --- use_node. (*use rw.*)
+                   --- finish.
+                   --- finish.
           -- unerase_gaps. ?? (gap (left_child w)).
              ++ unerase_gaps. ?? (gap (right_child w)).
-                ** eapply Deleted. rootify x. reflexivity.
-                   eapply Delout. apply DLowerK. reflexivity. reflexivity.
-                   rootify d. start_node. use ow. use_regap rw. all:finish.
+                ** eapply Deleted.
+                   --- rootify x. reflexivity.
+                   --- eapply Delout.
+                       +++ apply DLowerK.
+                           *** reflexivity.
+                           *** reflexivity.
+                       +++ rootify d. start_node.
+                           *** use_node. (*use ow.*)
+                           *** use_node. (*use_regap rw.*)
+                           *** finish.
+                           *** finish.
                 ** ?? (tryLowering (right_child w)).
-                   --- eapply Deleted. rootify x. reflexivity.
-                       eapply Delout. apply DLowerK. reflexivity. reflexivity.
-                       rootify d. start_node. use ow. use ow0. all:finish.
-                   --- eapply Deleted. rootify x. reflexivity.
-                       rootify d. eapply drot1. use ow. use rw. all:finish.
+                   --- eapply Deleted.
+                       +++ rootify x. reflexivity.
+                       +++ eapply Delout.
+                           *** apply DLowerK.
+                               ---- reflexivity.
+                               ---- reflexivity.
+                           *** rootify d. start_node.
+                               ---- use_node. (*use ow.*)
+                               ---- use_node. (*use ow0.*)
+                               ---- finish.
+                               ---- finish.
+                   --- eapply Deleted.
+                       +++ rootify x. reflexivity.
+                       +++ rootify d. eapply drot1.
+                           *** use_node. (*use ow.*)
+                           *** use_node. (*use rw.*)
+                           *** finish.
+                           *** finish.
              ++ ?? (isMissing (right_child w)).
-                ** eapply Deleted. rootify x. reflexivity.
-                   rootify d. eapply Delout. apply DLowerK. reflexivity. reflexivity.
-                   start_node. use_regap ow. missing. all:finish.
-                ** eapply Deleted. rootify x. reflexivity.
-                   eapply Delout. apply DSameK. reflexivity. reflexivity.
-                   rootify d. start_node. use ow. use rw. all:finish.
+                ** eapply Deleted.
+                   --- rootify x. reflexivity.
+                   --- rootify d. eapply Delout.
+                       +++ apply DLowerK.
+                           *** reflexivity.
+                           *** reflexivity.
+                       +++ start_node.
+                           *** use_node. (*use_regap ow.*)
+                           *** missing.
+                           *** finish.
+                           *** finish.
+                ** eapply Deleted.
+                   --- rootify x. reflexivity.
+                   --- eapply Delout.
+                       +++ apply DSameK.
+                           *** reflexivity.
+                           *** reflexivity.
+                       +++ rootify d. start_node.
+                           *** use_node. (*use ow.*)
+                           *** use_node. (*use rw.*)
+                           *** finish.
+                           *** finish.
         * eapply DNotFound. ss.
       + ?? (delete x) on (right_child w).
         * ?? (pick delpair). ?? (pick deletedHow).
-          -- eapply Deleted. rootify x. reflexivity.
-             rootify d. eapply Delout. apply DSameK. reflexivity. reflexivity.
-             start_node. use lw. use ow. all:finish.
+          -- eapply Deleted.
+             ++ rootify x. reflexivity.
+             ++ rootify d. eapply Delout.
+                ** apply DSameK.
+                   --- reflexivity.
+                   --- reflexivity.
+                ** start_node.
+                   --- use_node. (*use lw.*)
+                   --- use_node. (*use ow.*)
+                   --- finish.
+                   --- finish.
           -- unerase_gaps. ?? (gap (right_child w)).
              ++ unerase_gaps. ?? (gap (left_child w)).
-                ** eapply Deleted. rootify x. reflexivity.
-                   rootify d. eapply Delout. apply DLowerK. reflexivity. reflexivity.
-                   start_node. use_regap lw. use ow. all:finish.
+                ** eapply Deleted.
+                   --- rootify x. reflexivity.
+                   --- rootify d. eapply Delout.
+                       +++ apply DLowerK.
+                           *** reflexivity.
+                           *** reflexivity.
+                       +++ start_node.
+                           *** use_node. (*use_regap lw.*)
+                           *** use_node. (*use ow.*)
+                           *** finish.
+                           *** finish.
                 ** ?? (tryLowering (left_child w)).
-                   --- eapply Deleted. rootify x. reflexivity.
-                       rootify d. eapply Delout. apply DLowerK. reflexivity. reflexivity.
-                       start_node. use ow0. use ow. all:finish.
-                   --- eapply Deleted. rootify x. reflexivity.
-                       rootify d. eapply drot2. use lw. use ow. all:finish.
+                   --- eapply Deleted.
+                       +++ rootify x. reflexivity.
+                       +++ rootify d. eapply Delout.
+                           *** apply DLowerK.
+                               ---- reflexivity.
+                               ---- reflexivity.
+                           *** start_node.
+                               ---- use_node. (*use ow0.*)
+                               ---- use_node. (*use ow.*)
+                               ---- finish.
+                               ---- finish.
+                   --- eapply Deleted.
+                       +++ rootify x. reflexivity.
+                       +++ rootify d. eapply drot2.
+                           *** use_node. (*use lw.*)
+                           *** use_node. (*use ow.*)
+                           *** finish.
+                           *** finish.
              ++ ?? (isMissing (left_child w)).
-                ** eapply Deleted. rootify x. reflexivity.
-                   rootify d. eapply Delout. apply DLowerK. reflexivity. reflexivity.
-                   start_node. missing. use_regap ow. all:finish.
-                ** eapply Deleted. rootify x. reflexivity.
-                   rootify d. eapply Delout. apply DSameK. reflexivity. reflexivity.
-                   start_node. use lw. use ow. all:finish.
+                ** eapply Deleted.
+                   --- rootify x. reflexivity.
+                   --- rootify d. eapply Delout.
+                       +++ apply DLowerK.
+                           *** reflexivity.
+                           *** reflexivity.
+                       +++ start_node.
+                           *** missing.
+                           *** use_node. (*use_regap ow.*)
+                           *** finish.
+                           *** finish.
+                ** eapply Deleted.
+                   --- rootify x. reflexivity.
+                   --- rootify d. eapply Delout.
+                       +++ apply DSameK.
+                           *** reflexivity.
+                           *** reflexivity.
+                       +++ start_node.
+                           *** use_node. (*use lw.*)
+                           *** use_node. (*use ow.*)
+                           *** finish.
+                           *** finish.
         * eapply DNotFound. ss.
     - eapply DNotFound. ss.
   Qed.
@@ -669,3 +1088,7 @@ Extraction Inline negb.
 Extract Inlined Constant Bool.bool_dec => "(=)".
 
 Extraction "wavl_noauto.ml" find insert delete.
+
+(* Local Variables: *)
+(* company-coq-local-symbols: (("++" . ?⧺) ("Esorted" . ?⊿) ("#" . ?◻) ("wavltree" . ?🎄) ("[]" . ?∅) ("^" . ?⋄) ("^#" . ?⟎) ("Enegb" . ?¬) ("true" . ?Ṫ) ("false" . ?Ḟ) ("EL" . ?Ḷ) ("EB" . ?Ḅ) ("EZ" . ?Ẓ)) *)
+(* End: *)

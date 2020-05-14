@@ -23,7 +23,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ***********************************************************************)
 
-Require Export RelationClasses.
+Require Export Coq.Classes.RelationClasses.
 
 Class Ordered(A : Set) := 
   {

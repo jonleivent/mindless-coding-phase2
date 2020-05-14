@@ -23,14 +23,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
  ***********************************************************************)
 
-Require Export erasable.
+Require Export mindless.erasable.
 Import ErasableNotation.
-Require Export ZArith.
-Require Import utils.
-Require Import posall.
-Require Import factorevars.
-Require Import hypiter.
-Require Import Lia.
+Require Export Coq.ZArith.ZArith.
+Require Import mindless.utils.
+Require Import mindless.posall.
+Require Import mindless.factorevars.
+Require Import mindless.hypiter.
+Require Import Coq.micromega.Lia.
 
 Notation EZ := ##Z (only parsing).
 

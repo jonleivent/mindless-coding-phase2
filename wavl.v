@@ -55,12 +55,14 @@ See "Rank-Balanced Trees" by Haeupler, Sen, Tarjan
 
  *)
 
-Require Import elist.
-Require Import ezbool.
-Require Import utils.
-Require Import hypiter.
+Require Import mindless.elist.
+Require Import mindless.ezbool.
+Require Import mindless.utils.
+Require Import mindless.hypiter.
 
 Generalizable All Variables.
+
+Set Default Goal Selector "all".
 
 Context {A : Set}.
 
@@ -235,25 +237,25 @@ Section Lemmas.
   (*Because we use Z (integers) for ranks, instead of nat, we need to prove a
   lower bound for ranks: *)
   Lemma wavl_min_rank`(w : wavltree k g lg rg c) : k >= - #1.
-  Proof. induction w; !. Qed.
+  Proof. induction w. !. Qed.
 
   (*Nodes, which have non-empty contents, must have non-negative ranks.*)
   Lemma wavl_node_min_rank`(w : wavltree k g lg rg c) : c <> [] -> k >= #0.
   Proof.
     ?? w.
-    pose proof (wavl_min_rank (left_child w)). (*either child would work*)
-    all: !.
+    1: pose proof (wavl_min_rank (left_child w)). (*either child would work*)
+    !.
   Qed.
   
   (*reverse implication of the above*)
-  Lemma wavl_node_nonempty`(w : wavltree k g lg rg c) : k >= #0 -> c <> [].
-  Proof. ?? w; !. Qed.
+  Lemma wavl_node_nonempty`(w : wavltree k g lg rg c) : k >= #0 -> c <> [] .
+  Proof. ?? w. !. Qed.
 
   (*Two lemmas that are used to project the field equalities from Missings: *)
-  Lemma missing_contents`(w : wavltree (- #1) g lg rg c) : c = [].
+  Lemma missing_contents`(w : wavltree (- #1) g lg rg c) : c = [] .
   Proof.
     pose proof (wavl_node_min_rank w).
-    ?? w; !.
+    ?? w. !.
   Qed.
 
   Lemma missing_rank`(w : wavltree k g lg rg []) : k = - #1.
@@ -336,7 +338,7 @@ Section Check_Leaf_Rule.
   Proof.
     unfold is_leaf.
     repeat destruct_match.
-    all: !.
+    !.
   Qed.
 
   (*Note: this is a case of a non-proof-mode, non-Qed function (is_leaf) that
@@ -365,8 +367,8 @@ Section Find.
 
   (*Note: the reassoc tactic, which is defined in elist.v, is a backtracking
   tactic where each success is a different rewrite of a list (EL) in the
-  conclusion with distinct top-level assocativity.  We will use reassoc as a
-  way to force the associativity of the conclusion's contents parameter to
+  conclusion with distinct top-level assocativity.  We will later use reassoc as
+  a way to force the associativity of the conclusion's contents parameter to
   guide proof search down different search paths corresponding to different
   placements of its root datum.*)
 
@@ -374,12 +376,12 @@ Section Find.
 
   Fixpoint find(x : A)`(w : wavltree k g lg rg c) : findResult x c.
   Proof.
-    ?? w.
-    - ?? (x =<> (datum w)).
-      + !!.
-      + ?? (find x) on (left_child w); !!.
-      + ?? (find x) on (right_child w); !!.
-    - !!.
+    (*examine w*)?? w.
+    - (*w is Node*)?? (x =<> (datum w)).
+      + (*x=d*)!!.
+      + (*x<d*)?? (find x) on (left_child w). !!.
+      + (*x>d*)?? (find x) on (right_child w). !!.
+    - (*w is Missing*)!!.
   Qed.
 
 End Find.
@@ -391,7 +393,7 @@ Section SetGap.
   Tactic Notation "!!" := [>econstructor; (reflexivity || eassumption)..].
 
   Definition setgap`(w : wavltree k ig lg rg c)(og : bool) : wavltree k #og lg rg c.
-  Proof. ?? w; !!. Qed.
+  Proof. ?? w. !!. Qed.
 
 End SetGap.
 
@@ -400,11 +402,11 @@ Section GetGap.
   Tactic Notation "!!" := [>unshelve eexists; [eassumption || exact false | boom]..].
 
   Definition getgap`(w : wavltree k g lg rg c) : { g' | c <> [] -> #g' = g}.
-  Proof. ?? w; !!. Qed.
+  Proof. ?? w. !!. Qed.
 
   Definition getgap2`(w : wavltree k g lg rg c) : { g' | k >= #0 -> #g' = g}.
-  Proof. ?? w; !!. Qed.
-
+  Proof. ?? w. !!. Qed. (*isn't used*)
+  
 End GetGap.
 
 Section IsGap.
@@ -416,18 +418,18 @@ Section IsGap.
   Definition isgap`(w : wavltree k g lg rg c)(g' : bool) : {k >= #0 /\ #g' = g} + {k= - #1 \/ #g' <> g}.
   Proof.
     ?? w.
-    ?? (g' ?= (gap w)).
-    all:!!.
+    1: ?? (g' ?= (gap w)).
+    !!.
   Qed.
 
 End IsGap.
-
+ 
 Section IsMissing.
 
   Tactic Notation "!!" := [>constructor; boom..].
 
   Definition isMissing`(w : wavltree k g lg rg c) : {c = [] /\ k = - #1} + {c <> [] /\ k >= #0}.
-  Proof. ?? w; !!. Qed.
+  Proof. ?? w. !!. Qed.
 
 End IsMissing.
 
@@ -449,22 +451,23 @@ Ltac wavl_assumption :=
   end;[boom..].
 
 (*Note that wavl_assumption must be more than just "eassumption" because
-eassumption requires that the assumption's type parameters match the
-conclusion syntactically (roughly), not semantically (the actual requirement
-is that they be unifiable - which is mostly syntatic).  Also, eassumption does
-not produce multiple solutions for backtracking.  We need semantic matching
-with backtracking because even ring_simplify cannot guarantee canonical forms
-of ring terms that may involve evars - or, a better way to say this is that
-there is no canonical-form-based syntactic matching procedure that can involve
-evars and permit all possible instantiations of those evars that would produce
+eassumption requires that the assumption's type parameters match the conclusion
+syntactically (roughly), not semantically (the actual requirement is that they
+be unifiable - which is mostly syntatic).  For example, C and C' may not
+directly unify until after canonizalizing their associativity. Also, eassumption
+does not produce multiple solutions for backtracking.  We need semantic matching
+with backtracking because even ring_simplify cannot guarantee canonical forms of
+ring terms that may involve evars - or, a better way to say this is that there
+is no canonical-form-based syntactic matching procedure that can involve evars
+and permit all possible instantiations of those evars that would produce
 semantic matches.  For example, consider matching terms 2 and ?x + ?y in Z.
 They aren't directly unifiable, but there are many semantic matches.  The best
 procedure is to solve the induced equality to something like ?x = 2 - ?y, then
 unify the lhs and rhs.  Because Z is a ring with + invertable to -, this one
 solution is general.  However, because booleans may be present in the wavltree
-rank terms (via coercion), an induced equality involving only boolean evars
-may not always have a single general solution, hence the need for backtracking
-over successes.  These semantic solutions are generated by the boom tactic.
+rank terms (via coercion), an induced equality involving only boolean evars may
+not always have a single general solution, hence the need for backtracking over
+successes.  These semantic solutions are generated by the boom tactic.
 
 Instead of eassumption, we use the "force exact" and "force refine" tacticals
 from utils.v within a multimatch.  The multimatch, "+" tactical, and the usage
@@ -492,12 +495,11 @@ with wavl_construction :=
   ].
 
 (*Note that reflexivity is sufficient to solve the "#g = pg" and "c =
-lc++[d]++rc" subgoals above.  In the first case, this is because g is
-introduced by Node, and so will always be an evar in this equation - and pg
-will itself either be an evar or a "#"'ed term due to our usage.  In the
-second case, this is because of the reassoc tactic prior to "eapply Node", and
-the fact that lc, d and rc will always be evars due to being introduced by
-Node. *)
+lc++[d]++rc" subgoals above.  In the first case, this is because g is introduced
+by Node, and so will always be an evar in this equation - and pg will itself
+either be an evar or a "#"'ed term due to our usage.  In the second case, this
+is because of the reassoc tactic, and the fact that lc, d and rc will always be
+evars due to being introduced by Node. *)
 
 Section Insert_Rotations.
 
@@ -522,7 +524,7 @@ Section Insert_Rotations.
   Proof.
     ?? lw.
     - ?? (right_child lw).
-      + ?? (gap (right_child lw)); !!.
+      + ?? (gap (right_child lw)). !!.
       + !!.
     - !.
   Qed.
@@ -532,7 +534,7 @@ Section Insert_Rotations.
   Proof.
     ?? rw.
     - ?? (left_child rw).
-      + ?? (gap (left_child rw)); !!.
+      + ?? (gap (left_child rw)). !!.
       + !!.
     - !.
   Qed.
@@ -563,7 +565,7 @@ hence has a real gap field.  The following unerase_gaps tactic does this.  It
 can be used to allow case analysis of gaps directly (instead of using the
 isgap function), and it can also be used prior to a wavl_assumption to allow
 its setgap call to be solved based on those unerased gaps.  Unfortunately, it
-cannot be called only when the need is established, because fo Coq's rules
+cannot be called only when the need is established, because of Coq's rules
 about evar scopes (meaning that a gap must be unerased prior to the
 introduction of any evar it is meant to fill).*)
 
@@ -650,18 +652,18 @@ Section Insert.
       + ?? (insert x) on (left_child w).
         * ?? (pick insertedHow).
           -- !!.
-          -- ?? (isMissing (right_child w)); !!.
+          -- ?? (isMissing (right_child w)). !!.
           -- unerase_gaps. ?? (gap (left_child w)).
              ++ !!.
-             ++ ?? (isgap (right_child w) false); !!.
+             ++ ?? (isgap (right_child w) false). !!.
         * !!.
       + ?? (insert x) on (right_child w).
         * ?? (pick insertedHow).
           -- !!.
-          -- ?? (isMissing (left_child w)); !!.
+          -- ?? (isMissing (left_child w)). !!.
           -- unerase_gaps. ?? (gap (right_child w)).
              ++ !!.
-             ++ ?? (isgap (left_child w) false); !!.
+             ++ ?? (isgap (left_child w) false). !!.
         * !!.
     - !!.
   Qed.
@@ -704,7 +706,7 @@ Section TryLowering.
   Proof.
     ?? w.
     - ?? (isgap (left_child w) true).
-      + ?? (isgap (right_child w) true); !!.
+      + ?? (isgap (right_child w) true). !!.
       + !!.
     - !!.
   Qed.
@@ -755,7 +757,7 @@ Section Delete_Rotations.
   Proof.
     ?? lw.
     - ?? (right_child lw).
-      + ?? (isgap (left_child lw) false); !!.
+      + ?? (isgap (left_child lw) false). !!.
       + !!.
     - !.
   Qed.
@@ -789,13 +791,15 @@ Section Delete_Minimum.
     ?? w.
     - ?? (isMissing (left_child w)).
       + !!.
-      + ?? delmin on (left_child w). !. ?? (pick delpair). ?? (pick deletedHow).
-        * !!.
-        * ?? (isgap (right_child w) false).
-          -- ?? (isgap (left_child w) true).
-             ++ ?? (tryLowering (right_child w)); !!.
-             ++ !!.
-          -- unerase_gaps. !!.
+      + ?? delmin on (left_child w).
+        * !.
+        * ?? (pick delpair). ?? (pick deletedHow).
+          -- !!.
+          -- ?? (isgap (right_child w) false).
+             ++ ?? (isgap (left_child w) true).
+                ** ?? (tryLowering (right_child w)). !!.
+                ** !!.
+             ++ unerase_gaps. !!.
     - !.
   Qed.
 
@@ -820,13 +824,15 @@ Section Delete_Maximum.
     ?? w.
     - ?? (isMissing (right_child w)).
       + !!.
-      + ?? delmax on (right_child w). !. ?? (pick delpair). ?? (pick deletedHow).
-        * !!.
-        * ?? (isgap (left_child w) false).
-          -- ?? (isgap (right_child w) true).
-             ++ ?? (tryLowering (left_child w)); !!.
-             ++ !!.
-          -- unerase_gaps. !!.
+      + ?? delmax on (right_child w).
+        * !.
+        * ?? (pick delpair). ?? (pick deletedHow).
+          -- !!.
+          -- ?? (isgap (left_child w) false).
+             ++ ?? (isgap (right_child w) true).
+                ** ?? (tryLowering (left_child w)). !!.
+                ** !!.
+             ++ unerase_gaps. !!.
     - !.
   Qed.
 
@@ -866,16 +872,20 @@ Section Delete.
              gap, preferring to delete from a child with no gap (higher rank),
              if there is one.*)
              unerase_gaps. ?? (gap (left_child w)).
-             ++ ?? (delmin (right_child w)). !. ?? (pick delpair). ?? (pick deletedHow); !!.
-             ++ ?? (delmax (left_child w)). !. ?? (pick delpair). ?? (pick deletedHow); !!.
+             ++ ?? (delmin (right_child w)).
+                ** !.
+                ** ?? (pick delpair). ?? (pick deletedHow). !!.
+             ++ ?? (delmax (left_child w)).
+                ** !.
+                ** ?? (pick delpair). ?? (pick deletedHow). !!.
       + ?? (delete x) on (left_child w).
         * ?? (pick delpair). ?? (pick deletedHow).
           -- !!.
           -- unerase_gaps. ?? (gap (left_child w)).
              ++ unerase_gaps. ?? (gap (right_child w)).
                 ** !!.
-                ** ?? (tryLowering (right_child w)); !!.
-             ++ ?? (isMissing (right_child w)); !!.
+                ** ?? (tryLowering (right_child w)). !!.
+             ++ ?? (isMissing (right_child w)). !!.
         * !!.
       + ?? (delete x) on (right_child w).
         * ?? (pick delpair). ?? (pick deletedHow).
@@ -883,8 +893,8 @@ Section Delete.
           -- unerase_gaps. ?? (gap (right_child w)).
              ++ unerase_gaps. ?? (gap (left_child w)).
                 ** !!.
-                ** ?? (tryLowering (left_child w)); !!.
-             ++ ?? (isMissing (left_child w)); !!.
+                ** ?? (tryLowering (left_child w)). !!.
+             ++ ?? (isMissing (left_child w)). !!.
         * !!.
     - !!.
   Qed.
@@ -904,3 +914,8 @@ Extraction Inline negb.
 Extract Inlined Constant Bool.bool_dec => "(=)".
 
 Extraction "wavl.ml" find insert delete.
+
+
+(* Local Variables: *)
+(* company-coq-local-symbols: (("++" . ?⧺) ("Esorted" . ?⊿) ("#" . ?◻) ("wavltree" . ?🎄) ("[]" . ?∅) ("^" . ?⋄) ("^#" . ?⟎) ("Enegb" . ?¬) ("true" . ?Ṫ) ("false" . ?Ḟ) ("EL" . ?Ḷ) ("EB" . ?Ḅ) ("EZ" . ?Ẓ)) *)
+(* End: *)

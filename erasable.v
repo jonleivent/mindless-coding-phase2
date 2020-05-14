@@ -23,8 +23,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ***********************************************************************)
 
-Require Import hypiter.
-Require Import factorevars.
+Require Import mindless.hypiter.
+Require Import mindless.factorevars.
 
 Global Set Keep Proof Equalities.
 
@@ -197,7 +197,7 @@ Hint Unfold lift1 lift2 liftP1 liftP2 : unerase_unfolds.
 
 (*Lifting preserves well-foundedness - useful for well_founded_induction*)
 
-Require Import Init.Wf.
+Require Import Coq.Init.Wf.
 
 Lemma Ewf : forall {A:Set}{R : A -> A -> Prop}, well_founded R -> well_founded (liftP2 R).
 Proof.
@@ -233,7 +233,7 @@ Proof.
   apply H.
 Qed.
 
-Require Eqdep_dec.
+Require Coq.Logic.Eqdep_dec.
 
 Lemma Eeq_proofs_unicity : forall {A:Set}, (forall x y:A, x = y \/ x <> y) -> forall (x y:##A) (p1 p2 : x = y), p1 = p2.
 Proof.
