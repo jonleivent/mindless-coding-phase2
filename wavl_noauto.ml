@@ -1,9 +1,4 @@
 
-type comparison =
-| Eq
-| Lt
-| Gt
-
 type compareSpecT =
 | CompEqT
 | CompLtT
@@ -14,13 +9,11 @@ type 'a sig0 = 'a
 
 
 
-type 'a ordered = { compare : ('a -> 'a -> comparison); compare_spec : ('a -> 'a -> compareSpecT) }
-
 type a (* AXIOM TO BE REALIZED *)
 
-(** val ordA : a ordered **)
+(** val compare_spec : a -> a -> compareSpecT **)
 
-let ordA =
+let compare_spec =
   failwith "AXIOM TO BE REALIZED"
 
 type wavltree =
@@ -34,11 +27,10 @@ type findResult =
 (** val find : a -> wavltree -> findResult **)
 
 let rec find x = function
-| Node (_, d, lw, rw) ->
-  (match ordA.compare_spec x d with
-   | CompEqT -> Found
-   | CompLtT -> find x lw
-   | CompGtT -> find x rw)
+| Node (_, d, lw, rw) -> (match compare_spec x d with
+                          | CompEqT -> Found
+                          | CompLtT -> find x lw
+                          | CompGtT -> find x rw)
 | Missing -> NotFound
 
 (** val setgap : wavltree -> bool -> wavltree **)
@@ -106,7 +98,7 @@ type insertResult =
 
 let rec insert x = function
 | Node (g0, d, lw, rw) ->
-  (match ordA.compare_spec x d with
+  (match compare_spec x d with
    | CompEqT -> FoundByInsert
    | CompLtT ->
      (match insert x lw with
@@ -235,7 +227,7 @@ type deleteResult =
 
 let rec delete x = function
 | Node (g0, d, lw, rw) ->
-  (match ordA.compare_spec x d with
+  (match compare_spec x d with
    | CompEqT ->
      if isMissing lw
      then Deleted (DLowerK, (setgap rw true))

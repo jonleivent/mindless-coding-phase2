@@ -23,10 +23,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ***********************************************************************)
 
-Require Export mindless.sorted.
+From Coq Require Export Lists.List.
+Require Export mindless.ordered.
 Require Export mindless.solvesorted.
 Require Export mindless.erasable.
 Export ErasableNotation.
+Export Notations.
 Require Import mindless.utils.
 
 Notation " [ ] " := nil (format "[ ]") : list_scope.
@@ -36,21 +38,18 @@ Global Opaque NotIn.
 
 Section defs.
   Context {A : Set}.
-  Context {ordA : Ordered A}.
-  
-  Definition Esorted := (liftP1 sorted).
-  
+
   Definition Eapp := (lift2 (@app A)).
 
-  Definition ENotIn(x : A) := liftP1 (NotIn x).
-
-  Lemma Esorted_rw : 
-    forall (x : list A), Esorted #x <-> sorted x.
+  Lemma Eapp_rw :
+    forall (x y : list A), (Eapp #x #y) = #(app x y).
   Proof.
-    unfold Esorted.
+    unfold Eapp.
     unerase.
     tauto.
   Qed.
+
+  Definition ENotIn(x : A) := liftP1 (NotIn x).
 
   Lemma ENotIn_rw :
     forall (a : A)(x : list A), ENotIn a #x <-> NotIn a x.
@@ -60,10 +59,14 @@ Section defs.
     tauto.
   Qed.
 
-  Lemma Eapp_rw :
-    forall (x y : list A), (Eapp #x #y) = #(app x y).
+  Context {ordA : Ordered A}.
+  
+  Definition Esorted := (liftP1 sorted).
+  
+  Lemma Esorted_rw : 
+    forall (x : list A), Esorted #x <-> sorted x.
   Proof.
-    unfold Eapp.
+    unfold Esorted.
     unerase.
     tauto.
   Qed.

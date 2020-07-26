@@ -32,7 +32,7 @@ See "Rank-Balanced Trees" by Haeupler, Sen, Tarjan
 (* A non-interactive version of wavl.v, with all functions defined using ":=".
 Note that the leaves of all but the most trivial functions are still filled in
 using proof search. *)
-
+Set Ltac Profiling.
 Require Import elist.
 Require Import ezbool.
 Require Import utils.
@@ -45,6 +45,10 @@ Set Implicit Arguments.
 Context {A : Set}.
 
 Context {ordA : Ordered A}.
+
+Context {compare : A -> A -> comparison}.
+
+Context {compare_spec : forall x y, CompareSpecT (eq x y) (lt x y) (lt y x) (compare x y)}.
 
 Notation "x =<> y" := (compare_spec x y) (at level 70, only parsing).  
 
@@ -104,11 +108,11 @@ Ltac bang_setup_tactic ::=
                |apply wavl_min_rank in H]
        | _ => idtac
        end) in
-  hyps => loop f.
+  allhyps_td f.
 
 Ltac ss_setup_tactic :=
   let f H := (try apply wavl_is_sorted in H) in
-  hyps => loop f.
+  allhyps_td f.
 
 Ltac ss := ss_setup_tactic; unerase; solve[solve_sorted].
 
@@ -284,7 +288,7 @@ Ltac unerase_gaps :=
           clear X G;
           rename G' into G
         end in
-    hyps => loop f.
+    allhyps_td f.
 
 Section Insert.
 
@@ -524,7 +528,7 @@ Section Delete.
     end.
 
 End Delete.
-
+Show Ltac Profile.
 Set Printing Width 120.
 
 Require Import ExtrOcamlBasic.

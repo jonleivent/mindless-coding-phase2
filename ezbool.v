@@ -27,7 +27,6 @@ Require Export mindless.erasable.
 Import ErasableNotation.
 Require Export Coq.ZArith.ZArith.
 Require Import mindless.utils.
-Require Import mindless.posall.
 Require Import mindless.factorevars.
 Require Import mindless.hypiter.
 Require Import Coq.micromega.Lia.
@@ -340,7 +339,7 @@ with rsimp_fun F A :=
   then let e:=fresh in
        let ee:=fresh in
        remember T as e eqn:ee in *;
-       safe_ring_simplify_in ee;
+       (*safe_ring_simplify_in ee;*) try ring_simplify in ee;
        (*do not use subst e - it causes problems*)
        rewrite ?ee in *; clear e ee
   else (rsimp_term F; rsimp_term A).
@@ -361,9 +360,11 @@ Ltac rsimp_conc :=
   | |- ?G => rsimp_term G
   end.
 
+Ltac try_rsimp_in H := try rsimp_in H.
+
 Ltac rsimp :=
   rsimp_conc;
-  hyps => loop rsimp_in.
+  allhyps_td try_rsimp_in.
 
 (************************************************************************)
 
@@ -371,6 +372,12 @@ Hint Rewrite <- b2Z_inj_rw : bang_rws.
 
 Ltac bang_setup_tactic := idtac. (*to be redefined*)
 
+Ltac pose_b2Zbounds :=
+  let f H := try pose proof (b2Zbounds H) in
+  allhyps_bu f;
+  pose proof (b2Zbounds true);
+  pose proof (b2Zbounds false).
+    
 Ltac bang_internal setup :=
   dintros;
   unsetall;
@@ -379,7 +386,7 @@ Ltac bang_internal setup :=
   setup;
   unerase;
   autorewrite with bang_rws in *;
-  posall b2Zbounds;
+  pose_b2Zbounds;
   (lia ||
    lazymatch goal with
    | |- _ /\ _ => deconj; first[congruence|lia]

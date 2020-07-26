@@ -72,20 +72,20 @@ Ltac factor_conc_evars :=
     end.
 
 Ltac factor_hyp_evars :=
-  let Hs := all_hyps in
-  loop factor_evars Hs.
+  allhyps_td factor_evars.
 
 Ltac factor_all_evars :=
-  let Hs := all_hyps in
-  factor_conc_evars;
-  loop factor_evars Hs.
+  factor_hyp_evars;
+  factor_conc_evars.
 
 Ltac defactor_all_evars :=
-  let f H := let v:=get_value H in is_evar v in
-  let s H := unfold H in *; clear H in
-  filter f ltac:(loop s) all_hyps.
+  let f H := try (let v:=get_value H in
+                  is_evar v; unfold H in *; clear H)
+  in
+  allhyps_td f.
 
 Ltac clearbody_evars :=
-  let f H := let v:=get_value H in is_evar v in
-  let s H := clearbody H in
-  filter f ltac:(loop s) all_hyps.
+  let f H := try (let v:=get_value H in
+                 is_evar v; clearbody H)
+  in
+  allhyps_td f.

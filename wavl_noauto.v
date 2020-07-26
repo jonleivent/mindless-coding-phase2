@@ -32,7 +32,7 @@ See "Rank-Balanced Trees" by Haeupler, Sen, Tarjan
 (* A non-automated (actually, semi-automated) version of wavl.v, with no
 tailored specific solver tactics.  Note that the general "boom" and "ss"
 automation tactics are still used throughout. *)
-
+Set Ltac Profiling.
 Require Import mindless.elist.
 Require Import mindless.ezbool.
 Require Import mindless.utils.
@@ -45,6 +45,10 @@ Set Default Goal Selector "all".
 Context {A : Set}.
 
 Context {ordA : Ordered A}.
+
+Context {compare : A -> A -> comparison}.
+
+Context {compare_spec : forall x y, CompareSpecT (eq x y) (lt x y) (lt y x) (compare x y)}.
 
 Notation "x =<> y" := (compare_spec x y) (at level 70, only parsing).
 
@@ -80,7 +84,7 @@ Tactic Notation "??" constr(H) "on" constr(H') :=
 
 Tactic Notation "just" tactic1(tac) := let x := tac in exact x.
 
-Ltac left_child w :=
+Ltac left_child w := idtac;
   lazymatch type of w with
     wavltree _ _ _ _ (?C++[_]++_) =>
     lazymatch goal with
@@ -91,7 +95,7 @@ Ltac left_child w :=
 Notation "'left_child' w" := ltac:(just left_child w)
                                     (at level 199, no associativity, only parsing).
 
-Ltac right_child w :=
+Ltac right_child w := idtac;
   lazymatch type of w with
     wavltree _ _ _ _ (_++[_]++?C) =>
     lazymatch goal with
@@ -102,7 +106,7 @@ Ltac right_child w :=
 Notation "'right_child' w" := ltac:(just right_child w)
                                      (at level 199, no associativity, only parsing).
 
-Ltac datum w :=
+Ltac datum w := idtac;
   lazymatch type of w with
     wavltree _ _ _ _ (_++[?D]++_) => D
   end.
@@ -110,7 +114,7 @@ Ltac datum w :=
 Notation "'datum' w" := ltac:(just datum w)
                                (at level 199, no associativity, only parsing).
 
-Ltac gap w :=
+Ltac gap w := idtac;
   lazymatch type of w with
     wavltree _ # ?G _ _ _ => G
   end.
@@ -162,7 +166,13 @@ Section Lemmas.
 
 End Lemmas.
 
-Ltac bang_setup_tactic ::=
+Ltac allhyps tac := idtac;
+  lazymatch goal with
+  | H : _ |- _ => tac H; revert H; allhyps tac; intro H
+  | _ => idtac
+  end.
+
+Ltac bang_setup_tactic ::= idtac;
   let f H :=
       (lazymatch type of H with
        | wavltree _ _ _ _ _ =>
@@ -171,11 +181,11 @@ Ltac bang_setup_tactic ::=
                |apply wavl_min_rank in H]
        | _ => idtac
        end) in
-  hyps => loop f.
+  allhyps f.
 
-Ltac ss_setup_tactic :=
+Ltac ss_setup_tactic := idtac;
   let f H := (try apply wavl_is_sorted in H) in
-  hyps => loop f.
+  allhyps f.
 
 Ltac ss := ss_setup_tactic; unerase; solve[solve_sorted].
 
@@ -191,7 +201,7 @@ Section Check_Leaf_Rule.
     | _ => false
     end.
 
-  Ltac destruct_match :=
+  Local Ltac destruct_match := idtac;
     match goal with |- context[match ?X with _ => _ end] => destruct X end.
 
   Local Lemma leaf_rule_works`(w : wavltree k g lg rg c) : k = #0 <-> is_leaf w = true.
@@ -284,13 +294,13 @@ End IsMissing.
 
 Ltac start_node := eapply Node; [reflexivity|reflexivity|..].
 Ltac missing := eapply Missing; [reflexivity|boom|reflexivity|reflexivity].
-Ltac use w := force refine w by boom.
-Ltac use_regap w := force refine (setgap w _) by boom.
-Ltac use_node :=
+Ltac use w := idtac; force refine w by boom.
+Ltac use_regap w := idtac; force refine (setgap w _) by boom.
+Ltac use_node := idtac;
   lazymatch goal with
     w: wavltree _ _ _ _ ?C |- wavltree _ _ _ _ ?C => use w + use_regap w
   end.
-Ltac finish :=
+Ltac finish := idtac;
   match goal with
   | |- Esorted _ => ss
   | _ => boom
@@ -301,34 +311,50 @@ Section Insert_Rotations.
   Definition irot1`(lw : wavltree k #false llg lrg lc)(x : A)`(rw : wavltree (k - #2) #true rlg rrg rc)
     : llg = Enegb lrg -> Esorted(lc++[x]++rc) -> forall g, wavltree k #g #false #false (lc++[x]++rc).
   Proof.
+    (* lw is higher than rw (k > k-2), so it makes sense to examine lw first *)
     ?? lw.
-    - ?? (right_child lw).
-      + ?? (gap (right_child lw)).
-        * rootify (datum lw). start_node.
-          -- use_node. (* use (left_child lw).*)
+    - (* The right child of lw, rw0, needs to be combined somehow with rw.  rw0
+         might be at the same height or 1 above rw, so that needs to be
+         determined first.  But, if we first examine rw0 before examining its
+         gap, we can eliminate the case when it is missing *)
+      ?? (right_child lw).
+      + (* rw0 is not missing, so examine its gap now *)
+        ?? (gap (right_child lw)).
+        * (* rw0 has a gap, so it is at k-2, the same as rw, which means the two
+             can be combined easily with the result not havng a gap, so still
+             fitting under k, rooted where lw already is *)
+          rootify (datum lw). start_node.
+          -- exact (left_child lw).
           -- rootify x. start_node.
-             ++ use_node. (*use_regap (right_child lw).*)
-             ++ use_node. (*use_regap rw.*)
+             ++ use_regap (right_child lw).
+             ++ use_regap rw.
              ++ finish.
              ++ finish.
           -- finish.
           -- finish.
-        * rootify (datum (right_child lw)). start_node.
+        * (* rw0 has no gap, so we have to split it up with its left child lw1
+             pairing with lw0, the regapped left child of lw, and its right
+             child rw1 pairing with regapped rw, with the new root where rw0
+             is *)
+          rootify (datum (right_child lw)). start_node.
           -- start_node.
-             ++ use_node. (*use_regap (left_child lw).*)
-             ++ use_node. (*use (left_child (right_child lw)).*)
+             ++ use_regap (left_child lw).
+             ++ use (left_child (right_child lw)).
              ++ finish.
              ++ finish.
           -- start_node.
-             ++ use_node. (*use (right_child (right_child lw)).*)
-             ++ use_node. (*use_regap rw.*)
+             ++ use (right_child (right_child lw)).
+             ++ use_regap rw.
              ++ finish.
              ++ finish.
           -- finish.
           -- finish.
-      + assert (k = #1) as -> by boom. rsimp. apply missing_contents in rw as ->.
+      + (* rw0 is missing - note that its sequence is now [] *)
+        assert (k = #1) as -> by boom. rsimp.
+        (* note that his implies rw is missing as well, because its height is -1 *)
+        apply missing_contents in rw as ->.
         rootify (datum lw). start_node.
-        * use_node. (*use (left_child lw).*)
+        * use (left_child lw).
         * start_node.
           -- missing.
           -- missing.
@@ -336,7 +362,9 @@ Section Insert_Rotations.
           -- finish.
         * finish.
         * finish.
-    - boom.
+    - (* lw is missing, but that's not possible because rw is lower, so there is
+         a contradiction *)
+      boom.
   Qed.
 
   Definition irot2`(lw : wavltree (k - #2) #true llg lrg lc)(x : A)`(rw : wavltree k #false rlg rrg rc)
@@ -399,7 +427,7 @@ Ltac unerase_gaps :=
           clear X G;
           rename G' into G
         end in
-    hyps => loop f.
+    allhyps_td f.
 
 Section Insert.
 
@@ -420,7 +448,7 @@ Section Insert.
     reflexivity.
   Qed.
 
-  Ltac tree_with x :=
+  Ltac tree_with x := idtac;
     match goal with
       H:wavltree _ _ _ _ ?C |- _ =>
       lazymatch C with context[x] => H end
@@ -1074,7 +1102,7 @@ Section Delete.
   Qed.
 
 End Delete.
-
+Show Ltac Profile.
 Set Printing Width 120.
 
 Require Import ExtrOcamlBasic.

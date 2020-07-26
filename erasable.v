@@ -61,9 +61,10 @@ Proof.
   - congruence.
 Qed.
 
+Create HintDb unerase_rws discriminated.
 Hint Rewrite Erasable_rw : unerase_rws.
 
-Create HintDb unerase_unfolds.
+Create HintDb unerase_unfolds discriminated.
 
 Ltac unerase_hyp H :=
   autounfold with unerase_unfolds in H;
@@ -98,15 +99,11 @@ Ltac unerase_hyp H :=
     | _ => idtac
     end.
 
-Tactic Notation "unerase" ne_hyp_list(Hs) :=
-  let hs := harvest_hyps ltac:(generalize Hs) in
-  let f H := try unerase_hyp H in
-  rloop f hs.
+Tactic Notation "unerase" constr(H) := unerase_hyp H.
 
-Ltac unerase_hyps :=
-  let hs := all_hyps in
-  let f H := try unerase_hyp H in
-  rloop f hs.
+Ltac try_unerase_hyp H := try (unerase_hyp H).
+
+Ltac unerase_hyps := allhyps_td try_unerase_hyp.
 
 Ltac check_in_prop :=
   lazymatch goal with
@@ -131,8 +128,8 @@ Tactic Notation "unerase" :=
 Local Ltac solve_erasable_exists :=
   intros T x P;
   split;
-  [ intros (? & ? & ?);
-    unerase;
+  [ intros (y & H1 & H2);
+    first[apply Erasable_inj in H1|apply Erasable_inj in H2];
     subst;
     assumption
   | intro H;
@@ -162,7 +159,9 @@ of lifted functions.  But, the result would then need the "f $ x $ y"
 syntax, and would also make operators ugly... *)
 Definition appE{T1 T2 : Set}(f : ##(T1 -> T2))(x : ## T1) : ## T2.
 Proof.
-  unerase.
+  destruct f as [f].
+  destruct x as [x].
+  constructor.
   exact (f x).
 Defined.
 
@@ -174,13 +173,15 @@ to do a little more work to lift, but end up with a much more readable
 result. *)
 Definition lift1{A B : Set}(f : A -> B)(a : ##A) : ##B.
 Proof.
-  unerase.
+  destruct a as [a].
+  constructor.
   exact (f a).
 Defined.
 
 Definition lift2{A B C : Set}(f : A -> B -> C)(a : ##A)(b : ##B) : ##C.
 Proof.
-  unerase.
+  destruct a as [a], b as [b].
+  constructor.
   exact (f a b).
 Defined.
 
@@ -201,9 +202,9 @@ Require Import Coq.Init.Wf.
 
 Lemma Ewf : forall {A:Set}{R : A -> A -> Prop}, well_founded R -> well_founded (liftP2 R).
 Proof.
-  intros A R wfR. unfold well_founded. intro b. unerase b.
+  intros A R wfR. unfold well_founded. intro b. destruct b as [b].
   induction b as [b IHb] using (well_founded_induction wfR).
-  apply Acc_intro. intros a Rab. unerase a Rab. apply IHb with (1 := Rab).
+  apply Acc_intro. intros. unerase. apply IHb. assumption.
 Qed.
 
 Lemma Ewfof : forall {A B:Set}{R : A -> A -> Prop}(f : B -> A),
@@ -212,7 +213,9 @@ Proof.
   intros A B R f wfR. unfold well_founded. intro b. unerase b.
   remember (f b) as fb eqn:E. revert b E.
   induction fb as [fb IHb] using (well_founded_induction wfR). intros b ->.
-  apply Acc_intro. intros a Rfafb. unerase a Rfafb. apply IHb with (1 := Rfafb) (2 := eq_refl).
+  apply Acc_intro. intros a Rfafb. unerase. eapply IHb.
+  - eassumption.
+  - reflexivity.
 Qed.
 
 (*Lifting preserves decidability*)
@@ -223,7 +226,7 @@ Proof.
   specialize (H x y).
   destruct H.
   - subst. tauto.
-  - right. unerase. assumption.
+  - right. unerase. tauto.
 Qed.
 
 Lemma EPdec : forall {A:Set}, (forall (x y:A), x = y \/ x <> y) -> forall (x y:##A), x = y \/ x <> y.

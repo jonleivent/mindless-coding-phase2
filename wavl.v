@@ -54,7 +54,7 @@ See "Rank-Balanced Trees" by Haeupler, Sen, Tarjan
     readability.
 
  *)
-
+Set Ltac Profiling.
 Require Import mindless.elist.
 Require Import mindless.ezbool.
 Require Import mindless.utils.
@@ -67,6 +67,10 @@ Set Default Goal Selector "all".
 Context {A : Set}.
 
 Context {ordA : Ordered A}.
+
+Context {compare : A -> A -> comparison}.
+
+Context {compare_spec : forall x y, CompareSpecT (eq x y) (lt x y) (lt y x) (compare x y)}.
 
 (* trinary (eq, lt, gt) comparisons of A elements: *)
 Notation "x =<> y" := (compare_spec x y) (at level 70, only parsing).
@@ -292,7 +296,7 @@ Ltac bang_setup_tactic ::=
                |apply wavl_min_rank in H]
        | _ => idtac
        end) in
-  hyps => loop f.
+  allhyps_td f.
 
 (*The solve_sorted tactic is defined over normal lists and NotIn, not EL or
 ENotIn, and does not come equipped with its own setup tactic - so we both
@@ -301,7 +305,7 @@ unerase (which alters a goal with a Prop conclusion so that all erasable types
 are replaced by their base types):*)
 Ltac ss_setup_tactic :=
   let f H := (try apply wavl_is_sorted in H) in
-  hyps => loop f.
+  allhyps_td f.
 
 Ltac ss := ss_setup_tactic; unerase; solve[solve_sorted].
 
@@ -331,7 +335,7 @@ Section Check_Leaf_Rule.
     | _ => false
     end.
 
-  Ltac destruct_match :=
+  Local Ltac destruct_match :=
     match goal with |- context[match ?X with _ => _ end] => destruct X end.
 
   Local Lemma leaf_rule_works`(w : wavltree k g lg rg c) : k = #0 <-> is_leaf w = true.
@@ -590,7 +594,7 @@ Ltac unerase_gaps :=
           clear X G;
           rename G' into G
         end in
-    hyps => loop f.
+    allhyps_td f.
 
 Section Insert.
 
@@ -900,7 +904,7 @@ Section Delete.
   Qed.
 
 End Delete.
-
+Show Ltac Profile.
 Set Printing Width 120.
 
 Require Import ExtrOcamlBasic.
