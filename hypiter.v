@@ -1,31 +1,8 @@
-(***********************************************************************
-
-Copyright (c) 2016 Jonathan Leivent
-
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
- ***********************************************************************)
 
 (*Iteration over Hypotheses *)
 
-(*fast non-kludgy versions of iteration:*)
+(*fast non-kludgy versions of iteration - using dual continuations.  The icont continuation re-intros each hyp that was reverted.  The tcont continuation calls the target tac on each hyp in the desired order.  Even though these use revert/re-intro style iteration, they are about twice as fast as the hypothesis harvesting method.  The original harvesting tactics allow for much more functionality (including filtering, conditional iteration, etc.) that should be reproducible with this dual-continuation style if needed (and nothing needs them yet):*)
+
 Ltac allhyps_bu tac := (*tac runs in bottom-up hyp order*)
   let rec f icont tcont :=
       idtac;
