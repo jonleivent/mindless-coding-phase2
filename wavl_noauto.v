@@ -61,7 +61,7 @@ Tactic Notation "??" constr(H) "on" constr(H') :=
 
 Tactic Notation "just" tactic1(tac) := let x := tac in exact x.
 
-Ltac left_child w := idtac;
+Ltac left_child w :=
   lazymatch type of w with
     wavltree _ _ _ _ (?C++[_]++_) =>
     lazymatch goal with
@@ -72,7 +72,7 @@ Ltac left_child w := idtac;
 Notation "'left_child' w" := ltac:(just left_child w)
                                     (at level 199, no associativity, only parsing).
 
-Ltac right_child w := idtac;
+Ltac right_child w :=
   lazymatch type of w with
     wavltree _ _ _ _ (_++[_]++?C) =>
     lazymatch goal with
@@ -83,7 +83,7 @@ Ltac right_child w := idtac;
 Notation "'right_child' w" := ltac:(just right_child w)
                                      (at level 199, no associativity, only parsing).
 
-Ltac datum w := idtac;
+Ltac datum w :=
   lazymatch type of w with
     wavltree _ _ _ _ (_++[?D]++_) => D
   end.
@@ -91,7 +91,7 @@ Ltac datum w := idtac;
 Notation "'datum' w" := ltac:(just datum w)
                                (at level 199, no associativity, only parsing).
 
-Ltac gap w := idtac;
+Ltac gap w :=
   lazymatch type of w with
     wavltree _ # ?G _ _ _ => G
   end.
@@ -113,7 +113,7 @@ Section Lemmas.
   
   Lemma wavl_node_min_rank`(w : wavltree k g lg rg c) : c <> [] -> k >= #0.
   Proof.
-    ?? w. 1: pose proof (wavl_min_rank (left_child w)). boom.
+    ?? w. 1:pose proof (wavl_min_rank (left_child w)). boom.
   Qed.
   
   Lemma wavl_node_nonempty`(w : wavltree k g lg rg c) : k >= #0 -> c <> [].
