@@ -3,7 +3,6 @@
 utils.v
 hypiter.v
 factorevars.v
-posall.v
 ordered.v
 erasable.v
 solvesorted.v
