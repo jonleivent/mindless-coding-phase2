@@ -79,7 +79,7 @@ Tactic Notation "unerase" constr(H) := unerase_hyp H.
 
 Ltac try_unerase_hyp H := try (unerase_hyp H).
 
-Ltac unerase_hyps := allhyps_td try_unerase_hyp.
+Ltac unerase_hyps := allhyps_introing try_unerase_hyp.
 
 Ltac check_in_prop :=
   lazymatch goal with

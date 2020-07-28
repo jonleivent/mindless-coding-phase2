@@ -340,7 +340,7 @@ Ltac try_rsimp_in H := try rsimp_in H.
 
 Ltac rsimp :=
   rsimp_conc;
-  allhyps_td try_rsimp_in.
+  allhyps_reverting try_rsimp_in.
 
 (************************************************************************)
 
@@ -349,8 +349,8 @@ Hint Rewrite <- b2Z_inj_rw : bang_rws.
 Ltac bang_setup_tactic := idtac. (*to be redefined*)
 
 Ltac pose_b2Zbounds :=
-  let f H := try pose proof (b2Zbounds H) in
-  allhyps_bu f;
+  let f H := try generalize (b2Zbounds H) in
+  allhyps_reverting_stop f;
   pose proof (b2Zbounds true);
   pose proof (b2Zbounds false).
     

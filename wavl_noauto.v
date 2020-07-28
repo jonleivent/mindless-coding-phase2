@@ -10,6 +10,7 @@ See "Rank-Balanced Trees" by Haeupler, Sen, Tarjan
 tailored specific solver tactics.  Note that the general "boom" and "ss"
 automation tactics are still used throughout. *)
 Set Ltac Profiling.
+Reset Ltac Profile.
 Require Import mindless.elist.
 Require Import mindless.ezbool.
 Require Import mindless.utils.
@@ -143,12 +144,6 @@ Section Lemmas.
 
 End Lemmas.
 
-Ltac allhyps tac := idtac;
-  lazymatch goal with
-  | H : _ |- _ => tac H; revert H; allhyps tac; intro H
-  | _ => idtac
-  end.
-
 Ltac bang_setup_tactic ::= idtac;
   let f H :=
       (lazymatch type of H with
@@ -158,11 +153,11 @@ Ltac bang_setup_tactic ::= idtac;
                |apply wavl_min_rank in H]
        | _ => idtac
        end) in
-  allhyps f.
+  allhyps_introing f.
 
 Ltac ss_setup_tactic := idtac;
   let f H := (try apply wavl_is_sorted in H) in
-  allhyps f.
+  allhyps_introing f.
 
 Ltac ss := ss_setup_tactic; unerase; solve[solve_sorted].
 
@@ -404,7 +399,7 @@ Ltac unerase_gaps :=
           clear X G;
           rename G' into G
         end in
-    allhyps_td f.
+    allhyps_td f. (*cannot be allhyps_introing because of rewrite?*)
 
 Section Insert.
 
@@ -1079,8 +1074,9 @@ Section Delete.
   Qed.
 
 End Delete.
-Show Ltac Profile.
+
 Set Printing Width 120.
+Show Ltac Profile CutOff 1.
 
 Require Import ExtrOcamlBasic.
 
