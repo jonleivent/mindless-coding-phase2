@@ -49,7 +49,8 @@ Section defs.
 
 End defs.
 
-Global Opaque Eapp ENotIn.
+(*Global Opaque Eapp ENotIn.*)
+Hint Unfold Eapp ENotIn Esorted : lift_unfolds.
 
 Hint Rewrite @Esorted_rw @ENotIn_rw @Eapp_rw : unerase_rws.
 

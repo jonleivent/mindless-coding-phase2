@@ -881,7 +881,7 @@ Section Delete.
   Qed.
 
 End Delete.
-Show Ltac Profile.
+Show Ltac Profile CutOff 1.
 Set Printing Width 120.
 
 Require Import ExtrOcamlBasic.

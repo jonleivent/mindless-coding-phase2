@@ -41,6 +41,7 @@ Create HintDb unerase_rws discriminated.
 Hint Rewrite Erasable_rw : unerase_rws.
 
 Create HintDb unerase_unfolds discriminated.
+Create HintDb lift_unfolds discriminated.
 
 Ltac unerase_hyp H :=
   autounfold with unerase_unfolds in H;
@@ -89,11 +90,22 @@ Ltac check_in_prop :=
           |fail 1 "check_in_prop:" G "is not a Prop"]
   end.
 
-Ltac unerase_internal :=
+Ltac unerase_internal' :=
   autounfold with unerase_unfolds;
   unerase_hyps;
   autorewrite with unerase_rws;
   try apply erasable.
+
+Ltac unerase_internal :=
+  repeat lazymatch goal with
+         | H : ## _ |- _ =>
+           first [destruct H as [H]
+                 |let x:=fresh in destruct H as [x]; clear H; rename x into H]
+         end;
+  autounfold with lift_unfolds in *;
+  autorewrite with lift_rws in *;
+  rewrite -> ?Erasable_rw in *;
+  subst.
 
 Tactic Notation "unerase" :=
   intros;
@@ -154,6 +166,14 @@ Proof.
   exact (f a).
 Defined.
 
+Lemma liftrw1: forall {A B : Set}{f : A -> B}{a : A}, (lift1 f) # a = # (f a).
+Proof.
+  intros. unfold lift1. reflexivity.
+Qed.
+
+Create HintDb lift_rws discriminated.
+Hint Rewrite @liftrw1 : lift_rws.
+
 Definition lift2{A B C : Set}(f : A -> B -> C)(a : ##A)(b : ##B) : ##C.
 Proof.
   destruct a as [a], b as [b].
@@ -161,14 +181,43 @@ Proof.
   exact (f a b).
 Defined.
 
+Lemma liftrw2: forall{A B C : Set}{f : A -> B -> C}{a : A}{b : B},
+    (lift2 f) # a # b = # (f a b).
+Proof.
+  intros. unfold lift2. reflexivity.
+Qed.
+
+Hint Rewrite @liftrw2 : lift_rws.
+
 (* For Props, instead of a normal lifting of the entire signature,
 which would result in ##Prop type instead of a more usable Prop type,
 the Prop is wrapped in an existential to accept the erasable arg. *)
 Definition liftP1{A : Set}(p : A -> Prop)(ea : ##A) : Prop :=
   exists (a : A), #a=ea /\ p a.
 
+Lemma liftrwP1 : forall {A : Set}{p : A -> Prop}{ea : A},
+    (liftP1 p) # ea <-> p ea.
+Proof.
+  intros. unfold liftP1. split.
+  - intros (a & E & H). apply ->Erasable_rw in E. subst. exact H.
+  - intro H. exists ea. tauto.
+Qed.
+
+Hint Rewrite @liftrwP1 : lift_rws.
+
 Definition liftP2{A B : Set}(p : A -> B -> Prop)(ea : ##A)(eb : ##B) : Prop :=
   exists (a : A), #a=ea /\ exists (b : B), #b=eb /\ p a b.
+
+Lemma liftrwP2: forall{A B : Set}{p : A -> B -> Prop}{ea : A}{eb : B},
+    (liftP2 p) #ea #eb <-> p ea eb.
+Proof.
+  intros. unfold liftP2. split.
+  - intros (a & Ea & b & Eb & H). apply ->Erasable_rw in Ea. apply ->Erasable_rw in Eb.
+    subst. exact H.
+  - intro H. exists ea. split; [reflexivity|]. exists eb. tauto.
+Qed.
+
+Hint Rewrite @liftrwP2 : lift_rws.
 
 Hint Unfold lift1 lift2 liftP1 liftP2 : unerase_unfolds.
 

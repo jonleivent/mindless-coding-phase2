@@ -16,7 +16,6 @@ Require Import utils.
 Require Import hypiter.
 
 Generalizable All Variables.
-Set Asymmetric Patterns.
 Set Implicit Arguments.
 
 Context {A : Set}.
@@ -36,14 +35,17 @@ Notation EB := ##bool.
 Open Scope E_scope.
 
 Inductive wavltree (k : EZ)(pg lg rg : EB)(c : EL) : Set :=
-| Node(g : bool)(d : A)
-      (_: #g = pg)
-      `(_: c = lc++[d]++rc) 
+| Node{g : bool}(d : A)
+      {geq: #g = pg}
+      `{ceq: c = lc++[d]++rc}
       `(lw : wavltree (k - #1 - ^lg) lg llg lrg lc)
       `(rw : wavltree (k - #1 - ^rg) rg rlg rrg rc)
-      (leaf_rule: k = #1 -> lg = #false \/ rg = #false)
-      (_: Esorted c)
-| Missing(_: c = [])(_: k = - #1)(_: lg = #false)(_: rg = #false).
+      {leaf_rule: k = #1 -> lg = #false \/ rg = #false}
+      {sc: Esorted c}
+| Missing{ceq: c = []}{keq: k = - #1}{lgeq: lg = #false}{rgeq: rg = #false}.
+
+Print Implicit Node.
+Print Implicit Missing.
 
 (**********************************************************************)
 
@@ -56,9 +58,9 @@ Section Lemmas.
 
   Definition wavl_node_min_rank`(w : wavltree k g lg rg c) : c <> [] -> k >= #0 :=
     match w with
-    | Node _ _ _ _ _ _ _ _ lw _ _ _ _ _ =>
+    | Node _ lw _ =>
       let _ := wavl_min_rank lw in !
-    | Missing _ _ _ _ => !
+    | Missing _ => !
     end.
 
   Definition wavl_node_nonempty`(w : wavltree k g lg rg c) : k >= #0 -> c <> [] :=
@@ -99,7 +101,7 @@ Section Check_Leaf_Rule.
   
   Local Definition is_leaf`(w : wavltree k g lg rg c) : bool :=
     match w with
-    | Node _ _ _ _ _ _ _ _ (Missing _ _ _ _) _ _ (Missing _ _ _ _) _ _ => true
+    | Node _ (Missing _) (Missing _) => true
     | _ => false
     end.
 
@@ -132,13 +134,13 @@ Section Find.
 
   Fixpoint find(x : A)`(w : wavltree k g lg rg c) : findResult x c :=
     match w with
-    | Node _ d _ _ _ _ _ _ lw _ _ rw _ _ =>
+    | Node d lw rw =>
       match x =<> d with
-      | CompEqT _ => !!
-      | CompLtT _ => if find x lw then !! else !!
-      | CompGtT _ => if find x rw then !! else !!
+      | CompEqT _ _ _ => !!
+      | CompLtT _ _ _ => if find x lw then !! else !!
+      | CompGtT _ _ _ => if find x rw then !! else !!
       end
-    | Missing _ _ _ _ => !!
+    | Missing _ => !!
     end.
 
 End Find.
@@ -505,7 +507,7 @@ Section Delete.
     end.
 
 End Delete.
-Show Ltac Profile.
+Show Ltac Profile CutOff 1.
 Set Printing Width 120.
 
 Require Import ExtrOcamlBasic.
