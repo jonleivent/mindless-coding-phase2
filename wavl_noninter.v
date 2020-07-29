@@ -226,17 +226,17 @@ Section Insert_Rotations.
   Definition irot1`(lw : wavltree k #false llg lrg lc)(x : A)`(rw : wavltree (k - #2) #true rlg rrg rc)
     : llg = Enegb lrg -> Esorted (lc++[x]++rc) -> forall g, wavltree k #g #false #false (lc++[x]++rc) :=
     match lw with
-    | Node _ _ _ _ _ _ _ _ llw _ _ lrw _ _ =>
+    | Node _ llw lrw =>
       if lrw then (if *lrg then !! else !!) else !!
-    | Missing _ _ _ _ => !
+    | Missing _ => !
     end.
   
   Definition irot2`(lw : wavltree (k - #2) #true llg lrg lc)(x : A)`(rw : wavltree k #false rlg rrg rc)
     : Enegb rlg = rrg -> Esorted (lc++[x]++rc) -> forall g, wavltree k #g #false #false (lc++[x]++rc) :=
     match rw with
-    | Node _ _ _ _ _ _ _ _ rlw _ _ rrw _ _ =>
+    | Node _ rlw rrw =>
       if rlw then (if *rlg then !! else !!) else !!
-    | Missing _ _ _ _ => !
+    | Missing _ => !
     end.
 
 End Insert_Rotations.
@@ -272,15 +272,15 @@ Ltac unerase_gaps :=
 Section Insert.
 
   Inductive insertedHow(ik ok : EZ)(ig og olg org : EB) : Set :=
-  | ISameK(_: ok = ik)(_: og = ig)
-  | IWasMissing(_: ik = - #1)(_: ok = #0)(_: og = #false)
-  | IHigherK(_: ik >= #0)(_: ok = ik + #1)(_: olg = Enegb org)(_: og = #false).
+  | ISameK{_: ok = ik}{_: og = ig}
+  | IWasMissing{_: ik = - #1}{_: ok = #0}{_: og = #false}
+  | IHigherK{_: ik >= #0}{_: ok = ik + #1}{_: olg = Enegb org}{_: og = #false}.
 
   Inductive insertResult(x: A)(k : EZ)(g lg rg : EB)(c : EL) : Set :=
-  | Inserted`(_: c = lc++rc)
-            `(ow: wavltree ok og olg org (lc++[x]++rc))
-            `(_: insertedHow k ok g og olg org)
-  | FoundByInsert`(_: c = lc++[x]++rc).
+  | Inserted`{_: c = lc++rc}
+            `{ow: wavltree ok og olg org (lc++[x]++rc)}
+            `(ih: insertedHow k ok g og olg org)
+  | FoundByInsert`{_: c = lc++[x]++rc}.
 
   Ltac solve_wavl2 := use_rotations irot1 irot2 + solve_wavl.
 
@@ -301,25 +301,25 @@ Section Insert.
 
   Fixpoint insert(x : A)`(w : wavltree k g lg rg c) : insertResult x k g lg rg c :=
     match w with
-    | Node _ d _ _ _ _ _ _ lw _ _ rw _ _ =>
+    | Node d lw rw =>
       match x =<> d with
-      | CompEqT _ => !!
-      | CompLtT _ =>
+      | CompEqT _ _ _ => !!
+      | CompLtT _ _ _ =>
         match insert x lw with
-        | Inserted _ _ _ _ _ _ _ _ (ISameK _ _) => !!
-        | Inserted _ _ _ _ _ _ _ _ (IWasMissing _ _ _) => if ~rw then !! else !!
-        | Inserted _ _ _ _ _ _ _ _ (IHigherK _ _ _ _) => if %lw then !! else if ~%rw then !! else !!
-        | FoundByInsert _ _ _ => !!
+        | Inserted _ _ _ (ISameK _ _) => !!
+        | Inserted _ _ _ (IWasMissing _ _ _) => if ~rw then !! else !!
+        | Inserted _ _ _ (IHigherK _ _) => if %lw then !! else if ~%rw then !! else !!
+        | FoundByInsert _ _ _ _ _ => !!
         end
-      | CompGtT _ =>
+      | CompGtT _ _ _ =>
         match insert x rw with
-        | Inserted _ _ _ _ _ _ _ _ (ISameK _ _) => !!
-        | Inserted _ _ _ _ _ _ _ _ (IWasMissing _ _ _) => if ~lw then !! else !!
-        | Inserted _ _ _ _ _ _ _ _ (IHigherK _ _ _ _) => if %rw then !! else if ~%lw then !! else !!
-        | FoundByInsert _ _ _ => !!
+        | Inserted _ _ _ (ISameK _ _) => !!
+        | Inserted _ _ _ (IWasMissing _ _ _) => if ~lw then !! else !!
+        | Inserted _ _ _ (IHigherK _ _) => if %rw then !! else if ~%lw then !! else !!
+        | FoundByInsert _ _ _ _ _ => !!
         end
       end
-    | Missing _ _ _ _ => !!
+    | Missing _ => !!
     end.
   
 End Insert.
@@ -329,8 +329,8 @@ End Insert.
 Section TryLowering.
 
   Inductive tryLoweringResult(k : EZ)(g lg rg : EB)(c : EL) : Set :=
-  | TLlowered(_: lg = #true)(_: rg = #true)(ow: wavltree (k - #1) g #false #false c)
-  | TLtooLow(_: lg = #false \/ rg = #false).
+  | TLlowered{_: lg = #true}{_: rg = #true}{ow: wavltree (k - #1) g #false #false c}
+  | TLtooLow{_: lg = #false \/ rg = #false}.
 
   Ltac solve_tl :=
     dintros;
@@ -345,9 +345,9 @@ Section TryLowering.
 
   Definition tryLowering`(w : wavltree k g lg rg c) : tryLoweringResult k g lg rg c :=
     match w with
-    | Node _ d _ _ _ _ _ _ lw _ _ rw _ _ =>
+    | Node d lw rw =>
       if %lw then (if %rw then !! else !!) else !!
-    | Missing _ _ _ _ => !!
+    | Missing _ => !!
     end.
 
 End TryLowering.
@@ -355,11 +355,11 @@ End TryLowering.
 Notation "?↓ w" := (tryLowering w) (at level 10, only parsing).
 
 Inductive deletedHow(ik ok : EZ)(ig og : EB) : Set :=
-| DSameK(_: ok = ik)(_: og = ig)
-| DLowerK(_:  ok = ik - #1)(_: og = #true).
+| DSameK{_: ok = ik}{_: og = ig}
+| DLowerK{_:  ok = ik - #1}{_: og = #true}.
 
 Inductive delpair(k : EZ)(g : EB)(c : EL) : Set :=
-| Delout`(dh : deletedHow k ok g og)`(ow : wavltree ok og olg org c).
+| Delout`(dh : deletedHow k ok g og)`{ow : wavltree ok og olg org c}.
 
 Ltac solve_delpair :=
   dintros;
@@ -375,17 +375,17 @@ Section Delete_Rotations.
   Definition drot1`(lw : wavltree (k - #3) #true llg lrg lc)(x : A)`(rw : wavltree (k - #1) #false rlg rrg rc)
     : rlg = #false \/ rrg = #false -> Esorted (lc++[x]++rc) -> forall g, delpair k #g (lc++[x]++rc) :=
     match rw with
-    | Node _ d _ _ _ _ _ _ rlw _ _ rrw _ _ =>
+    | Node d rlw rrw =>
       if rlw then (if ~%rrw then !! else !!) else !!
-    | Missing _ _ _ _ => !
+    | Missing _ => !
     end.
 
   Definition drot2`(lw : wavltree (k - #1) #false llg lrg lc)(x : A)`(rw : wavltree (k - #3) #true rlg rrg rc)
     : llg = #false \/ lrg = #false -> Esorted (lc++[x]++rc) -> forall g, delpair k #g (lc++[x]++rc) :=
     match lw with
-    | Node _ d _ _ _ _ _ _ llw _ _ lrw _ _ =>
+    | Node d llw lrw =>
       if lrw then (if ~%llw then !! else !!) else !!
-    | Missing _ _ _ _ => !
+    | Missing _ => !
     end.
 
 End Delete_Rotations.
@@ -395,7 +395,7 @@ Ltac solve_delpair2 := use_rotations drot1 drot2 + solve_delpair.
 Section Delete_Minimum.
 
   Inductive delminResult(k : EZ)(g : EB)(c : EL) : Set :=
-    MinDeleted(min : A)`(_: c = [min]++rc)(dp : delpair k g rc).
+    MinDeleted(min : A)`{_: c = [min]++rc}(dp : delpair k g rc).
 
   Ltac solve_delmin :=
     dintros;
@@ -409,15 +409,15 @@ Section Delete_Minimum.
 
   Fixpoint delmin`(w : wavltree k g lg rg c) : k >= #0 -> delminResult k g c :=
     match w with
-    | Node _ d _ _ _ _ _ _ lw _ _ rw _ _ =>
+    | Node d lw rw =>
       if (isMissing lw) then !!
       else
         match (delmin lw !) with
-        | MinDeleted _ _ _ (Delout _ _ (DSameK _ _) _ _ _) => !!
-        | MinDeleted _ _ _ (Delout _ _ (DLowerK _ _) _ _ _) =>
+        | MinDeleted _ (Delout DSameK) => !!
+        | MinDeleted _ (Delout (DLowerK _ _)) =>
           if ~%rw then (if %lw then (if ?↓rw then !! else !!) else !!) else %!!
         end
-    | Missing _ _ _ _ => !
+    | Missing _ => !
     end.
 
 End Delete_Minimum.
@@ -425,7 +425,7 @@ End Delete_Minimum.
 Section Delete_Maximum.
 
   Inductive delmaxResult(k : EZ)(g : EB)(c : EL) : Set :=
-   MaxDeleted(max : A)`(_: c = lc++[max])(dp : delpair k g lc).
+   MaxDeleted(max : A)`{_: c = lc++[max]}(dp : delpair k g lc).
 
   Ltac solve_delmax :=
     dintros;
@@ -439,15 +439,15 @@ Section Delete_Maximum.
 
   Fixpoint delmax`(w : wavltree k g lg rg c) : k >= #0 -> delmaxResult k g c :=
     match w with
-    | Node _ d _ _ _ _ _ _ lw _ _ rw _ _ =>
+    | Node d lw rw =>
       if (isMissing rw) then !!
       else
         match (delmax rw !) with
-        | MaxDeleted _ _ _ (Delout _ _ (DSameK _ _) _ _ _) => !!
-        | MaxDeleted _ _ _ (Delout _ _ (DLowerK _ _) _ _ _) =>
+        | MaxDeleted _ (Delout DSameK) => !!
+        | MaxDeleted _ (Delout (DLowerK _ _)) =>
           if ~%lw then (if %rw then (if ?↓lw then !! else !!) else !!) else %!!
         end
-    | Missing _ _ _ _ => !
+    | Missing _ => !
     end.
 
 End Delete_Maximum.
@@ -455,8 +455,8 @@ End Delete_Maximum.
 Section Delete.
 
   Inductive deleteResult(x : A)(k : EZ)(g : EB)(c : EL) : Set :=
-  | Deleted`(_: c = lc++[x]++rc)(dp : delpair k g (lc++rc))
-  | DNotFound(_: ENotIn x c).
+  | Deleted`{_: c = lc++[x]++rc}(dp : delpair k g (lc++rc))
+  | DNotFound{_: ENotIn x c}.
 
   Ltac solve_delete :=
     dintros;
@@ -472,38 +472,38 @@ Section Delete.
 
   Fixpoint delete(x : A)`(w : wavltree k g lg rg c) : deleteResult x k g c :=
     match w with
-    | Node _ d _ _ _ _ _ _ lw _ _ rw _ _ =>
+    | Node d lw rw =>
       match x =<> d with
-      | CompEqT _ =>
+      | CompEqT _ _ _ =>
         if (isMissing lw) then !!
         else
           if (isMissing rw) then !!
           else
             if %lw
             then match (delmin rw !) with
-                 | MinDeleted _ _ _ (Delout _ _ (DSameK _ _) _ _ _) => !!
-                 | MinDeleted _ _ _ (Delout _ _ (DLowerK _ _) _ _ _) => %!!
+                 | MinDeleted _ (Delout DSameK) => !!
+                 | MinDeleted _ (Delout (DLowerK _ _)) => %!!
                  end
             else match (delmax lw !) with
-                 | MaxDeleted _ _ _ (Delout _ _ (DSameK _ _) _ _ _) => !!
-                 | MaxDeleted _ _ _ (Delout _ _ (DLowerK _ _) _ _ _) => !!
+                 | MaxDeleted _ (Delout DSameK) => !!
+                 | MaxDeleted _ (Delout (DLowerK _ _)) => !!
                  end
-      | CompLtT _ =>
+      | CompLtT _ _ _ =>
         match (delete x lw) with
-        | Deleted _ _ _ (Delout _ _ (DSameK _ _) _ _ _) => !!
-        | Deleted _ _ _ (Delout _ _ (DLowerK _ _) _ _ _) =>
+        | Deleted _ (Delout DSameK) => !!
+        | Deleted _ (Delout (DLowerK _ _)) =>
             if %lw then (if %rw then !! else if ?↓rw then !! else !!) else if ~rw then !! else !!
-        | DNotFound _ => !!
+        | DNotFound _ _ => !!
         end
-      | CompGtT _ =>
+      | CompGtT _ _ _ =>
         match (delete x rw) with
-        | Deleted _ _ _ (Delout _ _ (DSameK _ _) _ _ _) => !!
-        | Deleted _ _ _ (Delout _ _ (DLowerK _ _) _ _ _) =>
+        | Deleted _ (Delout DSameK) => !!
+        | Deleted _ (Delout (DLowerK _ _)) =>
             if %rw then (if %lw then !! else if ?↓lw then !! else !!) else if ~lw then !! else !!
-        | DNotFound _ => !!
+        | DNotFound _ _ => !!
         end
       end
-    | Missing _ _ _ _ => !!
+    | Missing _ => !!
     end.
 
 End Delete.

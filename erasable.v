@@ -221,19 +221,6 @@ Hint Rewrite @liftrwP2 : lift_rws.
 
 Hint Unfold lift1 lift2 liftP1 liftP2 : unerase_unfolds.
 
-(* Ltac unerase_do_rws ::= *)
-(*   let f H := *)
-(*       first [apply -> Erasable_rw in H *)
-(*             |apply -> liftrwP2 in H *)
-(*             |apply -> liftrwP1 in H *)
-(*             |idtac] in *)
-(*   allhyps_introing f; *)
-(*   first [apply <- Erasable_rw *)
-(*         |apply <- liftrwP2 *)
-(*         |apply <- liftrwP1 *)
-(*         |idtac]; *)
-(*   autorewrite with lift_rws in *. *)
-
 (*Lifting preserves well-foundedness - useful for well_founded_induction*)
 
 Require Import Coq.Init.Wf.
