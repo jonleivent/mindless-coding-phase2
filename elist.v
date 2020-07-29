@@ -134,8 +134,7 @@ Section EL_lemmas.
   Proof.
     unerase.
     intro H.
-    eapply app_eq_nil in H.
-    intuition discriminate.
+    discriminate.
   Qed.
 
   Lemma fnenilright : forall (lf rf : EL), rf <> [] -> lf++rf <> [].

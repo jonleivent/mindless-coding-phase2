@@ -96,15 +96,23 @@ Ltac unerase_internal' :=
   autorewrite with unerase_rws;
   try apply erasable.
 
+Create HintDb lift_rws discriminated.
+
+Hint Rewrite -> Erasable_rw : lift_rws.
+
+Ltac unerase_do_rws :=
+  idtac;
+  autorewrite with lift_rws in *.
+
 Ltac unerase_internal :=
   repeat lazymatch goal with
          | H : ## _ |- _ =>
            first [destruct H as [H]
                  |let x:=fresh in destruct H as [x]; clear H; rename x into H]
          end;
+  cbn in *;
   autounfold with lift_unfolds in *;
-  autorewrite with lift_rws in *;
-  rewrite -> ?Erasable_rw in *;
+  unerase_do_rws;
   subst.
 
 Tactic Notation "unerase" :=
@@ -159,35 +167,27 @@ Defined.
 that leave the normal application syntax intact.  This means we need
 to do a little more work to lift, but end up with a much more readable
 result. *)
-Definition lift1{A B : Set}(f : A -> B)(a : ##A) : ##B.
-Proof.
-  destruct a as [a].
-  constructor.
-  exact (f a).
-Defined.
+
+Definition lift1{A B : Set}(f : A -> B)(a : ##A) : ##B :=
+  match a with
+  | erasable a => # (f a)
+  end.
 
 Lemma liftrw1: forall {A B : Set}{f : A -> B}{a : A}, (lift1 f) # a = # (f a).
 Proof.
-  intros. unfold lift1. reflexivity.
+  intros. reflexivity.
 Qed.
 
-Create HintDb lift_rws discriminated.
-Hint Rewrite @liftrw1 : lift_rws.
-
-Definition lift2{A B C : Set}(f : A -> B -> C)(a : ##A)(b : ##B) : ##C.
-Proof.
-  destruct a as [a], b as [b].
-  constructor.
-  exact (f a b).
-Defined.
+Definition lift2{A B C : Set}(f : A -> B -> C)(a : ##A)(b : ##B) : ##C :=
+  match a, b with
+  | erasable a, erasable b => # (f a b)
+  end.
 
 Lemma liftrw2: forall{A B C : Set}{f : A -> B -> C}{a : A}{b : B},
     (lift2 f) # a # b = # (f a b).
 Proof.
-  intros. unfold lift2. reflexivity.
+  intros. reflexivity.
 Qed.
-
-Hint Rewrite @liftrw2 : lift_rws.
 
 (* For Props, instead of a normal lifting of the entire signature,
 which would result in ##Prop type instead of a more usable Prop type,
@@ -220,6 +220,19 @@ Qed.
 Hint Rewrite @liftrwP2 : lift_rws.
 
 Hint Unfold lift1 lift2 liftP1 liftP2 : unerase_unfolds.
+
+(* Ltac unerase_do_rws ::= *)
+(*   let f H := *)
+(*       first [apply -> Erasable_rw in H *)
+(*             |apply -> liftrwP2 in H *)
+(*             |apply -> liftrwP1 in H *)
+(*             |idtac] in *)
+(*   allhyps_introing f; *)
+(*   first [apply <- Erasable_rw *)
+(*         |apply <- liftrwP2 *)
+(*         |apply <- liftrwP1 *)
+(*         |idtac]; *)
+(*   autorewrite with lift_rws in *. *)
 
 (*Lifting preserves well-foundedness - useful for well_founded_induction*)
 

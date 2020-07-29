@@ -45,6 +45,8 @@ Definition Enegb := lift1 negb.
 Definition b2Z(b : bool) : Z := if b then 1 else 0.
 Definition Eb2Z := lift1 b2Z.
 
+Hint Unfold ezadd ezsub ezopp ezmul Enegb Eb2Z : lift_unfolds.
+
 Notation "^ b" := (b2Z b) (at level 30, format "^ b") : Z_scope.
 Notation "^ b" := (Eb2Z b) (at level 30, format "^ b") : E_scope.
 
