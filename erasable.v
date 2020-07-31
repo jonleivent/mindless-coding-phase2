@@ -104,23 +104,6 @@ Ltac unerase_do_rws :=
   idtac;
   autorewrite with lift_rws in *.
 
-Ltac unerase_internal :=
-  repeat lazymatch goal with
-         | H : ## _ |- _ =>
-           first [destruct H as [H]
-                 |let x:=fresh in destruct H as [x]; clear H; rename x into H]
-         end;
-  cbn in *;
-  autounfold with lift_unfolds in *;
-  unerase_do_rws;
-  subst.
-
-Tactic Notation "unerase" :=
-  intros;
-  tryif check_in_prop
-  then unerase_internal
-  else rewrite ?Erasable_rw in *.
-
 Local Ltac solve_erasable_exists :=
   intros T x P;
   split;
@@ -148,7 +131,7 @@ Lemma Erasable_exists_rw4 :
   forall (T : Set) (x : T) (P : T -> Prop), (exists (y : T), P y /\ #x = #y) <-> P x.
 Proof. solve_erasable_exists. Qed.
 
-Hint Rewrite Erasable_exists_rw1 Erasable_exists_rw2 Erasable_exists_rw3 Erasable_exists_rw4 : unerase_rws.
+(* Hint Rewrite Erasable_exists_rw1 Erasable_exists_rw2 Erasable_exists_rw3 Erasable_exists_rw4 : unerase_rws. *)
 
 (* Erasable+Prop is a monad, and appE is application within that monad
 of lifted functions.  But, the result would then need the "f $ x $ y"
@@ -195,12 +178,12 @@ the Prop is wrapped in an existential to accept the erasable arg. *)
 Definition liftP1{A : Set}(p : A -> Prop)(ea : ##A) : Prop :=
   exists (a : A), #a=ea /\ p a.
 
-Lemma liftrwP1 : forall {A : Set}{p : A -> Prop}{ea : A},
-    (liftP1 p) # ea <-> p ea.
+Lemma liftrwP1 : forall {A : Set}{p : A -> Prop}{a : A},
+    (liftP1 p) # a <-> p a.
 Proof.
-  intros. unfold liftP1. split.
-  - intros (a & E & H). apply ->Erasable_rw in E. subst. exact H.
-  - intro H. exists ea. tauto.
+  intros ? ? a. unfold liftP1. split.
+  - intros (? & ->%Erasable_inj & H). exact H.
+  - intro H. exists a. tauto.
 Qed.
 
 Hint Rewrite @liftrwP1 : lift_rws.
@@ -220,6 +203,113 @@ Qed.
 Hint Rewrite @liftrwP2 : lift_rws.
 
 Hint Unfold lift1 lift2 liftP1 liftP2 : unerase_unfolds.
+
+
+
+Module Unerase_Reflect.
+  
+  Inductive expr :=
+  | And : expr -> expr -> expr
+  | Or : expr -> expr -> expr
+  | Not : expr -> expr
+  | Imp : expr -> expr -> expr
+  | Bim : expr -> expr -> expr
+  | Eq{t:Set}(i j:t) : expr
+  | Neq{t:Set}(i j:t) : expr
+  | L1{t:Set}(p:t->Prop)(i:t) : expr
+  | L2{t1 t2:Set}(p:t1->t2->Prop)(i:t1)(j:t2) : expr
+  | Skip : Prop -> expr.
+
+  Fixpoint denote (e:expr) : Prop :=
+    match e with
+    | And e1 e2 => (denote e1) /\ (denote e2)
+    | Or e1 e2 => (denote e1) \/ (denote e2)
+    | Not e => ~ (denote e)
+    | Imp e1 e2 => (denote e1) -> (denote e2)
+    | Bim e1 e2 => (denote e1) <-> (denote e2)
+    | Eq i j => (# i) = (# j)
+    | Neq i j => (# i) <> (# j)
+    | L1 p i => (liftP1 p) # i
+    | L2 p i j => (liftP2 p) # i # j
+    | Skip p => p
+    end.
+
+  Ltac reify cont e :=
+    let next dop e2 d1 := reify ltac:(fun d2 => cont uconstr:(dop d1 d2)) e2 in
+    lazymatch e with
+    | ?e1 -> ?e2 => reify ltac:(next uconstr:(Imp) e2) e1
+    | ?e1 /\ ?e2 => reify ltac:(next uconstr:(And) e2) e1
+    | ?e1 \/ ?e2 => reify ltac:(next uconstr:(Or) e2) e1
+    | ~ e => reify ltac:(fun d => cont uconstr:(Not d)) e
+    | ?e1 <-> ?e2 => reify ltac:(next uconstr:(Bim) e2) e1
+    | # ?e1 = # ?e2 => cont uconstr:(Eq e1 e2)
+    | # ?e1 <> # ?e2 => cont uconstr:(Neq e1 e2)
+    | (liftP1 ?p) # ?i => cont uconstr:(L1 p i)
+    | (liftP2 ?p) # ?i # ?j => cont uconstr:(L2 p i j)
+    | _         => cont uconstr:(Skip e)
+    end.
+
+  Fixpoint reflect (e:expr) : Prop :=
+    match e with
+    | And e1 e2 => (reflect e1) /\ (reflect e2)
+    | Or e1 e2 => (reflect e1) \/ (reflect e2)
+    | Not e => ~ reflect e
+    | Imp e1 e2 => (reflect e1) -> (reflect e2)
+    | Bim e1 e2 => (reflect e1) <-> (reflect e2)
+    | Eq i j => i = j
+    | Neq i j => i <> j
+    | L1 p i => p i
+    | L2 p i j => p i j
+    | Skip p => p
+    end.
+
+  Theorem soundness: forall e, reflect e <-> denote e.
+  Proof.
+    intro e. induction e; cbn; autorewrite with lift_rws; tauto.
+  Qed.
+
+  Lemma do_reflection: forall e, reflect e -> denote e.
+  Proof.
+    apply soundness.
+  Qed.
+
+  Ltac destruct_erased :=
+    idtac;
+    repeat match goal with
+           | H : ## _ |- _ =>
+             first [destruct H as [H]
+                   |let x:=fresh in destruct H as [x]; clear H; rename x into H]
+           end.
+
+  Ltac doit :=
+    destruct_erased; cbn in *; autounfold with lift_unfolds in *;
+    let refun e := (apply (do_reflection e)) in
+    let rec rev :=
+        match goal with
+        | H : ?T |- _ => let x:=constr:(T:Prop) in (revert H; rev; intro H)
+        | |- ?G => reify refun G; cbn [reflect]
+        end
+    in rev; subst.
+
+End Unerase_Reflect.
+
+Ltac unerase_internal :=
+  repeat lazymatch goal with
+         | H : ## _ |- _ =>
+           first [destruct H as [H]
+                 |let x:=fresh in destruct H as [x]; clear H; rename x into H]
+         end;
+  cbn in *;
+  autounfold with lift_unfolds in *;
+  unerase_do_rws;
+  subst.
+
+Tactic Notation "unerase" :=
+  intros;
+  tryif check_in_prop
+  then Unerase_Reflect.doit (*unerase_internal*)
+  else rewrite ?Erasable_rw in *.
+
 
 (*Lifting preserves well-foundedness - useful for well_founded_induction*)
 
@@ -270,3 +360,4 @@ Proof.
   apply EPdec.
   exact H.
 Qed.
+

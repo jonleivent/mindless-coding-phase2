@@ -845,7 +845,7 @@ Module Reifier.
 
   (*cont is denoted -> max -> xs -> ()*)
 
-  Ltac reifyAtom cont n max a xs axs := idtac;
+  Ltac reifyAtom cont n max a xs axs := 
     lazymatch xs with
     | a::_ => cont n max axs
     | _::?xs => lazymatch n with
@@ -864,7 +864,7 @@ Module Reifier.
   Ltac opcont cont dop d1 d2 := cont uconstr:(dop d1 d2).
   Ltac oparg2 retac cont dop e2 d1 := retac ltac:(opcont cont dop d1) e2.
 
-  Ltac reifyList cont l max xs := idtac;
+  Ltac reifyList cont l max xs := 
     lazymatch l with
     | ?l1 ++ ?l2 => reifyList ltac:(oparg2 reifyList cont uconstr:(LF_app) l2) l1 max xs
     | ?a :: ?l   => reifyAvar ltac:(oparg2 reifyList cont uconstr:(LF_cons) l) a max xs
@@ -872,7 +872,7 @@ Module Reifier.
     | ?l        => reifyLvar ltac:(lonel cont) l max xs
     end.
 
-  Ltac reifyTerm cont e max xs := idtac;
+  Ltac reifyTerm cont e max xs := 
     lazymatch e with
     | ?e1 -> ?e2 => reifyTerm ltac:(oparg2 reifyTerm cont uconstr:(SF_imp) e2) e1 max xs
     | sorted ?l     => reifyList ltac:(sortl cont) l max xs
@@ -890,7 +890,7 @@ Module Reifier.
     | _ => ys
     end.
   
-  Ltac reify_and_reflect finish := idtac;
+  Ltac reify_and_reflect finish := 
     let X := lazymatch type of (_:Ordered _) with
                Ordered ?A => A
              end in
@@ -913,7 +913,7 @@ Module Reifier.
   Ltac do_reverts :=
     repeat (*revert Props only*)
       match goal with
-      | H : ?T |- _ => let tT:=type of T in constr_eq tT Prop; revert H
+      | H : ?T |- _ => let x:=constr:(T:Prop) in revert H
       end.
   
   Ltac ss finish :=
@@ -932,8 +932,8 @@ Module Reifier.
   
 End Reifier.
 
-Ltac solve_sorted := idtac; Reifier.ss Reifier.finish.
-Ltac debug_solve_sorted := idtac; Reifier.ss Reifier.finishdebug.
+Ltac solve_sorted := Reifier.ss Reifier.finish.
+Ltac debug_solve_sorted := Reifier.ss Reifier.finishdebug.
 
 Unset Mangle Names.
 
