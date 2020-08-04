@@ -334,14 +334,16 @@ Ltac rsimp_conc :=
   try rewrite zlhs_rw;
   autorewrite with ensharping_rws;
   autorewrite with term_rws;
-  lazymatch goal with
-  | |- ?G => rsimp_term G
-  end.
+  try ring_simplify.
+  (* lazymatch goal with *)
+  (* | |- ?G => rsimp_term G *)
+  (* end. *)
 
-Ltac try_rsimp_in H := try rsimp_in H.
+Ltac try_rsimp_in H := let T := type of H in rsimp_term T.
 
 Ltac rsimp :=
-  rsimp_conc;
+  autorewrite with b2Z_term_rws in *;
+  try ring_simplify;
   allhyps_reverting try_rsimp_in.
 
 (************************************************************************)
