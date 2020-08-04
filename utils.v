@@ -124,8 +124,8 @@ Tactic Notation "equate" uconstr(term) :=
   simple refine (let H := term in _); cycle -1;
   [equator H;clear H|..]; shelve_unifiable.
 
-Tactic Notation "force" "refine" uconstr(H) "by" tactic1(tac) :=
-  equate H; [my_f_equal; [tac..]|..].
+Tactic Notation "force" "refine" uconstr(H) "by" tactic1(frtac) :=
+  equate H; [my_f_equal; [frtac..]|..].
 
 Tactic Notation "force" "refine" uconstr(X) := force refine X by idtac.
 
