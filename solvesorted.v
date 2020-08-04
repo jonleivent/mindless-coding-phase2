@@ -858,29 +858,23 @@ Module Reifier.
   Ltac reifyAvar cont a max xs := reifyAtom cont max max constr:(Aatom a) xs xs.
   Ltac reifyLvar cont a max xs := reifyAtom cont max max constr:(Latom a) xs xs.
   
-  Ltac sorta cont dl := cont uconstr:(SF_sorted (LF_app (LF_list 0) (LF_list dl))).
-  Ltac sortl cont dl := cont uconstr:(SF_sorted dl).
-  Ltac lonel cont dl := cont uconstr:(LF_list dl).
-  Ltac opcont cont dop d1 d2 := cont uconstr:(dop d1 d2).
-  Ltac oparg2 retac cont dop e2 d1 := retac ltac:(opcont cont dop d1) e2.
-
   Ltac reifyList cont l max xs := 
     lazymatch l with
-    | ?l1 ++ ?l2 => reifyList ltac:(oparg2 reifyList cont uconstr:(LF_app) l2) l1 max xs
-    | ?a :: ?l   => reifyAvar ltac:(oparg2 reifyList cont uconstr:(LF_cons) l) a max xs
+    | ?l1 ++ ?l2 => reifyList ltac:(fun d1 => reifyList ltac:(fun d2 => cont uconstr:(LF_app d1 d2)) l2) l1 max xs
+    | ?a :: ?l   => reifyAvar ltac:(fun da => reifyList ltac:(fun dl => cont uconstr:(LF_cons da dl)) l) a max xs
     | nil       => cont uconstr:(LF_nil) max xs
-    | ?l        => reifyLvar ltac:(lonel cont) l max xs
+    | ?l        => reifyLvar ltac:(fun d => cont uconstr:(LF_list d)) l max xs
     end.
 
-  Ltac reifyTerm cont e max xs := 
+  Ltac reifyTerm cont e max xs :=
     lazymatch e with
-    | ?e1 -> ?e2 => reifyTerm ltac:(oparg2 reifyTerm cont uconstr:(SF_imp) e2) e1 max xs
-    | sorted ?l     => reifyList ltac:(sortl cont) l max xs
-    | ?e1 /\ ?e2 => reifyTerm ltac:(oparg2 reifyTerm cont uconstr:(SF_and) e2) e1 max xs
-    | ?e1 \/ ?e2 => reifyTerm ltac:(oparg2 reifyTerm cont uconstr:(SF_or) e2) e1 max xs
-    | ?a < ?b   => reifyAvar ltac:(oparg2 reifyAvar cont uconstr:(SF_lt) b) a max xs
-    | ?a ∉ ?l   => reifyAvar ltac:(oparg2 reifyList cont uconstr:(SF_notin) l) a max xs
-    | ~ ?a ∈ ?l => reifyAvar ltac:(oparg2 reifyList cont uconstr:(SF_notin) l) a max xs
+    | ?e1 -> ?e2 => reifyTerm ltac:(fun d1 => reifyTerm ltac:(fun d2 => cont uconstr:(SF_imp d1 d2)) e2) e1 max xs
+    | sorted ?l     => reifyList ltac:(fun d => cont uconstr:(SF_sorted d)) l max xs
+    | ?e1 /\ ?e2 => reifyTerm ltac:(fun d1 => reifyTerm ltac:(fun d2 => cont uconstr:(SF_and d1 d2)) e2) e1 max xs
+    | ?e1 \/ ?e2 => reifyTerm ltac:(fun d1 => reifyTerm ltac:(fun d2 => cont uconstr:(SF_or d1 d2)) e2) e1 max xs
+    | ?a < ?b   => reifyAvar ltac:(fun da => reifyAvar ltac:(fun db => cont uconstr:(SF_lt da db)) b) a max xs
+    | ?a ∉ ?l   => reifyAvar ltac:(fun da => reifyList ltac:(fun dl => cont uconstr:(SF_notin da dl)) l) a max xs
+    | ~ ?a ∈ ?l => reifyAvar ltac:(fun da => reifyList ltac:(fun dl => cont uconstr:(SF_notin da dl)) l) a max xs
     | _         => cont uconstr:(SF_skip e) max xs
     end.
   
