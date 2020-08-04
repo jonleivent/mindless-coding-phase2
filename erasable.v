@@ -235,13 +235,12 @@ Module Unerase_Reflect.
     end.
 
   Ltac reify cont e :=
-    let next dop e2 d1 := reify ltac:(fun d2 => cont uconstr:(dop d1 d2)) e2 in
     lazymatch e with
-    | ?e1 -> ?e2 => reify ltac:(next uconstr:(Imp) e2) e1
-    | ?e1 /\ ?e2 => reify ltac:(next uconstr:(And) e2) e1
-    | ?e1 \/ ?e2 => reify ltac:(next uconstr:(Or) e2) e1
-    | ~ e => reify ltac:(fun d => cont uconstr:(Not d)) e
-    | ?e1 <-> ?e2 => reify ltac:(next uconstr:(Bim) e2) e1
+    | ?e1 /\ ?e2 => reify ltac:(fun d1 => reify ltac:(fun d2 => cont uconstr:(And d1 d2)) e2) e1
+    | ?e1 \/ ?e2 => reify ltac:(fun d1 => reify ltac:(fun d2 => cont uconstr:(Or d1 d2)) e2) e1
+    | ~ ?e => reify ltac:(fun d => cont uconstr:(Not d)) e
+    | ?e1 -> ?e2 => reify ltac:(fun d1 => reify ltac:(fun d2 => cont uconstr:(Imp d1 d2)) e2) e1
+    | ?e1 <-> ?e2 => reify ltac:(fun d1 => reify ltac:(fun d2 => cont uconstr:(Bim d1 d2)) e2) e1
     | # ?e1 = # ?e2 => cont uconstr:(Eq e1 e2)
     | # ?e1 <> # ?e2 => cont uconstr:(Neq e1 e2)
     | (liftP1 ?p) # ?i => cont uconstr:(L1 p i)
